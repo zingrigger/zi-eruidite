@@ -4,6 +4,7 @@ import MetaPage from "@/components/MetaPage.astro"
 import ListingHead from "@/components/ListingHead.astro"
 import Board from "@/components/Board.astro"
 import LenticularSection from "@/components/LenticularSection.astro"
+import TicketSection from "@/components/TicketSection.astro"
 import { getBoardViews } from "@/lib/content"
 
 const items = await getBoardViews("en")
@@ -24,4 +25,6 @@ const items = await getBoardViews("en")
   <Board locale="en" />
   <ListingHead kicker={`~/LenticularCard`} title="Lenticular Card" />
   <LenticularSection locale="en" />
+  <ListingHead kicker="~/TicketCard" title="Tickets" />
+  <TicketSection locale="en" />
 </Layout>

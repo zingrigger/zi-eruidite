@@ -4,6 +4,7 @@ import MetaPage from "@/components/MetaPage.astro"
 import ListingHead from "@/components/ListingHead.astro"
 import Board from "@/components/Board.astro"
 import LenticularSection from "@/components/LenticularSection.astro"
+import TicketSection from "@/components/TicketSection.astro"
 import { getBoardViews } from "@/lib/content"
 
 const items = await getBoardViews("zh")
@@ -31,4 +32,6 @@ const desc = `把喜欢的邮票（含把任意图装进邮票框的自定义邮
   <Board locale="zh" />
   <ListingHead kicker={`~/LenticularCard`} title="光栅卡" />
   <LenticularSection locale="zh" />
+  <ListingHead kicker="~/TicketCard" title="票券" />
+  <TicketSection locale="zh" />
 </Layout>

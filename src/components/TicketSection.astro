@@ -1,0 +1,306 @@
+---
+/**
+ * 票券组：板下的静态拼贴展示区（仿 LenticularSection 范式，独立于 board-grid，
+ * 不参与拖拽）。这里内联一组票券定义，映射为多枚 <ticket-card>，横竖混排、蓝白
+ * 对调、轻微旋转错落，铺成「一组被收藏的票券」。票面文字是设计图案的一部分，
+ * 恒为英文、不随语言翻译；区块标题的双语由各页面 ListingHead 承担。
+ */
+import type { ImageMetadata } from "astro"
+import stargirl from "@/assets/board/stargirl.jpg"
+import donglongdong1 from "@/assets/board/DONGLONGDONG-1.jpg"
+import donglongdong2 from "@/assets/board/DONGLONGDONG-2.jpg"
+import donglongdong3 from "@/assets/board/DONGLONGDONG-3.jpg"
+import unknownCyc1 from "@/assets/board/unknownCYC-1.jpg"
+import unknownCyc2 from "@/assets/board/unknownCYC-2.jpg"
+import unknownCyc3 from "@/assets/board/unknownCYC-3.jpg"
+import preview1 from "@/assets/board/preview-1.png"
+import { t, type Locale } from "@/lib/i18n"
+import TicketCard from "./TicketCard.astro"
+
+type Props = {
+  locale: Locale
+}
+const { locale } = Astro.props
+
+type Ticket = {
+  variant: "voucher" | "coupon" | "eticket"
+  orient: "h" | "v"
+  invert?: boolean
+  label: string
+  amount: string
+  title?: string
+  sub?: string
+  code?: string
+  meta?: { k: string; v: string }[]
+  seed: number
+  width: string
+  rot: number
+  /** 图片主题下填实心蓝侧的插画（复用板上现有资产，逐张分配） */
+  image: ImageMetadata
+}
+
+const TICKETS: Ticket[] = [
+  {
+    variant: "voucher",
+    orient: "h",
+    label: "Gift Voucher",
+    amount: "75%",
+    sub: "Valid until 12 Dec 2024",
+    code: "GV-2024-8842",
+    seed: 11,
+    width: "16rem",
+    rot: -3,
+    image: stargirl,
+  },
+  {
+    variant: "coupon",
+    orient: "h",
+    invert: true,
+    label: "Special Discount",
+    amount: "$100",
+    title: "Coupon",
+    sub: "Members only",
+    code: "CP-100-2077",
+    seed: 23,
+    width: "15rem",
+    rot: 2,
+    image: donglongdong1,
+  },
+  {
+    variant: "eticket",
+    orient: "h",
+    label: "E-Ticket",
+    amount: "Day Pass",
+    title: "Investment Insight 2023",
+    sub: "17–19 Dec 2023",
+    code: "ETK-0234-A",
+    meta: [
+      { k: "Name", v: "J. Smith" },
+      { k: "Date", v: "17 Dec" },
+      { k: "Seat", v: "A-12" },
+    ],
+    seed: 5,
+    width: "17.5rem",
+    rot: 1,
+    image: unknownCyc1,
+  },
+  {
+    variant: "coupon",
+    orient: "v",
+    label: "Gift",
+    amount: "75%",
+    title: "Discount",
+    sub: "Storewide",
+    code: "GC-75",
+    seed: 31,
+    width: "10.5rem",
+    rot: 4,
+    image: unknownCyc2,
+  },
+  {
+    variant: "voucher",
+    orient: "h",
+    invert: true,
+    label: "Super Discount",
+    amount: "50%",
+    title: "Gift Voucher",
+    sub: "Valid until 31 Dec 2024",
+    code: "SD-2024-50",
+    seed: 47,
+    width: "15rem",
+    rot: -2,
+    image: donglongdong2,
+  },
+  {
+    variant: "coupon",
+    orient: "v",
+    invert: true,
+    label: "Discount",
+    amount: "90%",
+    title: "Off",
+    sub: "Limited",
+    code: "DC-90",
+    seed: 19,
+    width: "10.5rem",
+    rot: -5,
+    image: donglongdong3,
+  },
+  {
+    variant: "eticket",
+    orient: "h",
+    invert: true,
+    label: "E-Ticket",
+    amount: "VIP",
+    title: "Design Week 2024",
+    sub: "05–08 Mar 2024",
+    code: "ETK-1180-B",
+    meta: [
+      { k: "Name", v: "A. Doe" },
+      { k: "Date", v: "05 Mar" },
+      { k: "Seat", v: "VIP-3" },
+    ],
+    seed: 9,
+    width: "17rem",
+    rot: -1,
+    image: unknownCyc3,
+  },
+  {
+    variant: "voucher",
+    orient: "h",
+    label: "Gift Voucher",
+    amount: "$75",
+    sub: "Valid until 30 Jun 2025",
+    code: "GV-75-2025",
+    seed: 53,
+    width: "14rem",
+    rot: 3,
+    image: preview1,
+  },
+]
+---
+
+<ticket-showcase data-theme="solid">
+  <ticket-controls>
+    <ticket-theme role="group" aria-label={t(locale, "boardTicketTheme")}>
+      <button
+        type="button"
+        class="tk-theme-btn"
+        data-theme-btn="solid"
+        aria-pressed="true"
+      >
+        {t(locale, "boardTicketSolid")}
+      </button>
+      <button
+        type="button"
+        class="tk-theme-btn"
+        data-theme-btn="image"
+        aria-pressed="false"
+      >
+        {t(locale, "boardTicketImage")}
+      </button>
+    </ticket-theme>
+  </ticket-controls>
+  <ticket-collage>
+    {TICKETS.map((t) => (
+        <ticket-slot>
+          <TicketCard
+            variant={t.variant}
+            orient={t.orient}
+            invert={t.invert}
+            label={t.label}
+            amount={t.amount}
+            title={t.title}
+            sub={t.sub}
+            code={t.code}
+            meta={t.meta}
+            seed={t.seed}
+            width={t.width}
+            rot={t.rot}
+            image={t.image}
+          />
+        </ticket-slot>
+      ))}
+  </ticket-collage>
+</ticket-showcase>
+
+<script>
+  import { mountTicketTilt, type TiltHandle } from "@/lib/ticket-tilt"
+  /**
+   * 自主定制元素：SSR 出的就是完整票券，挂载时接上「默认/图片」主题切换与悬停倾斜。
+   * 注册与生命周期跟 LenticularCard 对齐：View Transitions / HMR 会重跑脚本，所以先查
+   * customElements.get（否则 define 抛 NotSupportedError，整个模块就地中断）；
+   * 「已挂载」标记用实例私有字段而不是 dataset——dataset 留在 DOM 上，元素被重新
+   * 升级时会误报「已就绪」而永不挂监听。断开时 destroy，免得监听与 rAF 活过这个页面。
+   */
+  if (!customElements.get("ticket-showcase")) {
+    customElements.define(
+      "ticket-showcase",
+      class extends HTMLElement {
+        #cleanups: (() => void)[] | null = null
+
+        connectedCallback(): void {
+          if (this.#cleanups) return
+          const cleanups: (() => void)[] = []
+          const themeBtns =
+            this.querySelectorAll<HTMLButtonElement>("[data-theme-btn]")
+          for (const btn of themeBtns) {
+            const onClick = (): void => {
+              this.dataset.theme = btn.dataset.themeBtn || "solid"
+              for (const b of themeBtns)
+                b.setAttribute("aria-pressed", String(b === btn))
+            }
+            btn.addEventListener("click", onClick)
+            cleanups.push(() => btn.removeEventListener("click", onClick))
+          }
+          const tilt: TiltHandle = mountTicketTilt(this)
+          cleanups.push(() => tilt.destroy())
+          this.#cleanups = cleanups
+        }
+
+        disconnectedCallback(): void {
+          for (const off of this.#cleanups ?? []) off()
+          this.#cleanups = null
+        }
+      },
+    )
+  }
+</script>
+
+<style>
+  ticket-showcase {
+    display: block;
+  }
+  ticket-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2xs) var(--space-3xs);
+    padding-top: var(--space-s);
+  }
+  ticket-theme {
+    display: flex;
+    gap: var(--space-3xs);
+  }
+  .tk-theme-btn {
+    font: inherit;
+    font-size: var(--step--1);
+    padding: var(--space-3xs) var(--space-s);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted-foreground);
+    cursor: pointer;
+  }
+  .tk-theme-btn[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .tk-theme-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  ticket-collage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-l) var(--space-m);
+    /* 与上下内容留白；暗色下靠各卡 drop-shadow 把白卡托起 */
+    padding-block: var(--space-m) var(--space-xl);
+  }
+  ticket-slot {
+    display: inline-block;
+    /* 3D 倾斜落在此（父），票券的 filter:drop-shadow 在子 card 上，互不压平。
+       变量叫 --tk-rx/--tk-ry 而非 --rx/--ry：后者已被 lenticular.css 用 @property
+       注册成文档级全局的 <number>，而 @property 无作用域——往它写 8deg 会因
+       syntax 不匹配而 invalid at computed-value time（落回 initial 0），倾角永远为 0。 */
+    transform: translateY(var(--stagger, 0px)) perspective(800px)
+      rotateX(var(--tk-rx, 0deg)) rotateY(var(--tk-ry, 0deg));
+  }
+  /* 奇偶错位，强化「随手摊在桌上」的拼贴感（旋转留在卡上，两者互不覆盖） */
+  ticket-collage > ticket-slot:nth-child(even) {
+    --stagger: var(--space-m);
+  }
+</style>

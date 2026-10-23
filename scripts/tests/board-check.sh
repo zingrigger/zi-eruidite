@@ -141,9 +141,58 @@ assert_has "${board_js}" "menu-btn" "浮层按钮选择器"
 assert_has "${board_js}" "--menu-r" "浮层半径参与 JS 翻转判定"
 assert_has "${board_js}" "interactive" "客户端激活标记点亮提示行"
 
+# ---------- 板下票券组静态展示区（仿光栅卡，独立于 board-grid、不参与拖拽） ----------
+assert_has dist/board/index.html "<ticket-collage" "票券拼贴容器渲染"
+assert_has dist/board/index.html "<ticket-card" "票券卡 SSR 静态渲染"
+assert_has dist/board/index.html "tk-voucher" "礼品券版式（齿孔边）"
+assert_has dist/board/index.html "tk-coupon" "折扣券版式"
+assert_has dist/board/index.html "tk-eticket" "电子门票版式"
+assert_has dist/board/index.html "tk-bar" "条形码入产物"
+assert_has dist/board/index.html "tk-qr" "电子门票点阵码入产物"
+assert_has dist/board/index.html "--tk-mask:url(" "票券撕口/齿孔 mask 入产物"
+assert_has dist/board/index.html "票券" "中文票券区标题"
+assert_has dist/en/board/index.html "<ticket-collage" "英文页票券区渲染"
+assert_has dist/en/board/index.html "Tickets" "英文票券区标题"
+
+# ---------- 票券图片主题 + 切换控件 ----------
+assert_has dist/board/index.html "<ticket-showcase" "票券 showcase 容器"
+assert_match dist/board/index.html 'ticket-showcase[^>]*data-theme="solid"' "默认主题=solid（纯蓝白）"
+assert_has dist/board/index.html "<ticket-theme" "主题切换控件渲染"
+assert_has dist/board/index.html 'data-theme-btn="image"' "图片主题按钮存在"
+assert_has dist/board/index.html "tk-fill" "图片填充图层入 SSR"
+assert_has dist/board/index.html "tk-fill-img" "填充图层走 Astro <Image> 优化"
+assert_has dist/board/index.html "票券主题" "中文切换控件 aria-label"
+assert_has dist/en/board/index.html "Ticket theme" "英文切换控件 aria-label"
+
+# ---------- 票券悬停倾斜：默认就在、没有开关 + 脚本 chunk ----------
+assert_lacks dist/board/index.html "data-tilt-btn" "倾斜开关按钮已移除"
+assert_lacks dist/board/index.html 'tk-tilt-btn' "倾斜开关样式已移除"
+assert_lacks dist/board/index.html 'data-tilt="on"' "倾斜不再有运行态属性"
+# 票券脚本含 import（复用 lenticular-spring）→ 提成 chunk，不再内联进 HTML
+tk_js="$(grep -rl 'ticket-showcase' dist/_astro/*.js 2>/dev/null | head -1)"
+[ -n "${tk_js}" ] || fail "找不到票券脚本 chunk（TicketSection script 未入产物？）"
+assert_has "${tk_js}" "themeBtn" "主题切换逻辑入产物 chunk"
+assert_has "${tk_js}" "ticket-slot" "倾斜默认挂载：脚本遍历每个 ticket-slot"
+assert_has "${tk_js}" "pointerenter" "悬停监听在 chunk 里（无需先点按钮）"
+assert_has "${tk_js}" "prefers-reduced-motion" "倾斜模块的 reduced-motion 守卫"
+
+# ---------- 倾斜变量名不得撞 lenticular.css 全局注册的 @property ----------
+# @property 无作用域：--rx/--ry 被注册成文档级 <number>，往它写 8deg 会
+# invalid at computed-value time 落回 0（倾角永远为 0），写裸数字又让整条
+# transform 作废成 none。票券曾因此静悄悄坏了一版，故在产物里钉住名字。
+assert_has "${tk_js}" "--tk-rx" "倾斜脚本写 --tk-rx（不是被注册的 --rx）"
+# 注意用裸 token：esbuild 会把字符串字面量改写成反引号，带引号的断言会空过
+assert_lacks "${tk_js}" "--rx" "倾斜脚本不再碰全局注册的 --rx"
+tk_css="$(grep -l 'ticket-slot' dist/_astro/*.css 2>/dev/null | head -1)"
+[ -n "${tk_css}" ] || fail "找不到含 ticket-slot 规则的产物 CSS"
+assert_match "${tk_css}" 'rotateX\(var\(--tk-rx' "票券倾斜的 transform 读 --tk-rx/--tk-ry"
+
 # ---------- 层叠上下文回归：置底负 z 不得沉到板面背景之下 ----------
-# 产物 CSS 是压缩过的，匹配无空格形式；只看 Board 自己的样式文件，避免被全站样式误命中
-if grep -qE "isolation:[[:space:]]*isolate" dist/_astro/Board.*.css; then
+# 新增 scoped 组件（如票券）会让 Astro 合并 CSS chunk、文件名漂移，故按「含
+# board-grid 规则的那份 CSS」定位，不钉死 Board.*.css 文件名
+board_css="$(grep -lE "board-grid" dist/_astro/*.css 2>/dev/null | head -1)"
+[ -n "${board_css}" ] || fail "找不到含 board-grid 规则的产物 CSS"
+if grep -qE "isolation:[[:space:]]*isolate" "${board_css}"; then
   pass "board-grid 独立层叠上下文（isolation: isolate）"
 else
   fail "board-grid 缺 isolation: isolate（置底负 z 物件会消失在板面下）"
