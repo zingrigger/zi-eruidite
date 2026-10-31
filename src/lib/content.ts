@@ -4,6 +4,7 @@ import { getCollection, type CollectionEntry } from "astro:content"
 import { baseId, localeOf, type Locale } from "@/lib/i18n"
 import { isSubpost } from "@/lib/utils"
 import { BOARD_ITEMS, type L10n } from "@/data/board"
+import { BIRD_ITEMS } from "@/data/birds"
 
 export const pageTitle = (title: string) => `${title} | ${SITE.title}`
 
@@ -201,6 +202,65 @@ export async function getBoardViews(locale: Locale): Promise<BoardView[]> {
     }),
   )
   return views.sort((a, b) => a.z - b.z || a.id.localeCompare(b.id))
+}
+
+export type BirdView = {
+  /** 稳定键 = 学名下划线形式，与 hotlink 文件同名 */
+  id: string
+  /** 展示名：zh 页取中文名、en 页取英文名；缺失回落另一语言 */
+  name: string
+  /** 另一语言名（信息卡并列展示） */
+  nameAlt: string
+  /** 目名：zh→orderZh，en→order */
+  orderLabel: string
+  /** 科名：zh→familyZh，en→family（拉丁科名 familyLatin 始终另带） */
+  familyLabel: string
+  familyLatin: string
+  sci: string
+  pinyin?: string
+  iucn?: string
+  /** hotlink webp 绝对 URL（信息卡源链 / 预览取图） */
+  url: string
+  meetsQualityBar: boolean
+  /** 是否默认上板的 5 只之一（其余进托盘） */
+  isDefault: boolean
+  /** 仅默认件有：初始几何 */
+  x?: number
+  y?: number
+  rotate?: number
+  /** 仅默认件有：叠放序（SSR --z） */
+  z?: number
+}
+
+/**
+ * 鸟类收藏板展示视图。以 `BIRD_ITEMS` 为源（44 目各一只，名字自带 zh/en，
+ * 无需 `.en.md` 孪生），按 locale 选名与目/科标签；保持数组顺序（IOC seq），
+ * 不排序。保留 `async` 以对齐既有 `await getBoardViews(...)` 调用风格。
+ */
+export async function getBirdViews(locale: Locale): Promise<BirdView[]> {
+  return BIRD_ITEMS.map((item): BirdView => {
+    const nameMain = locale === "en" ? item.en : item.zh
+    const nameAlt = locale === "en" ? item.zh : item.en
+    return {
+      id: item.id,
+      // 某语言缺失时回落另一个
+      name: nameMain || nameAlt,
+      nameAlt: nameAlt || nameMain,
+      orderLabel: locale === "en" ? item.order : item.orderZh,
+      familyLabel: locale === "en" ? item.family : item.familyZh,
+      familyLatin: item.familyLatin,
+      sci: item.sci,
+      pinyin: item.pinyin,
+      iucn: item.iucn,
+      url: item.url,
+      meetsQualityBar: item.meetsQualityBar,
+      isDefault: !!item.default,
+      x: item.x,
+      y: item.y,
+      rotate: item.rotate,
+      z: item.z,
+    }
+  })
 }
 
 export async function getMoments(): Promise<CollectionEntry<"moments">[]> {

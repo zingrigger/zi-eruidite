@@ -328,6 +328,11 @@ export function mountGlassBubble(host: HTMLElement): GlassBubbleHandle {
     const im = new Image()
     const src = host.dataset.src ?? ""
     if (src) {
+      /* hotlink hosts (e.g. /birds on raw.githubusercontent) send
+         CORS headers; without this the bitmap taints the page
+         canvas and texImage2D throws SecurityError. Same-origin
+         assets ignore the attribute, so /board is unaffected. */
+      im.crossOrigin = "anonymous"
       im.src = src
       await im.decode().catch(() => {})
     }

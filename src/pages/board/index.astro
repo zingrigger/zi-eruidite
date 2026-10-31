@@ -5,9 +5,12 @@ import ListingHead from "@/components/ListingHead.astro"
 import Board from "@/components/Board.astro"
 import LenticularSection from "@/components/LenticularSection.astro"
 import TicketSection from "@/components/TicketSection.astro"
-import { getBoardViews } from "@/lib/content"
+import BirdBoard from "@/components/BirdBoard.astro"
+import { getBirdViews, getBoardViews } from "@/lib/content"
+import { t } from "@/lib/i18n"
 
 const items = await getBoardViews("zh")
+const birds = await getBirdViews("zh")
 
 const desc = `把喜欢的邮票（含把任意图装进邮票框的自定义邮票）与徽章摆在同一块板上，鼠标拖住即可自由重新摆放.
 参考:
@@ -34,4 +37,43 @@ const desc = `把喜欢的邮票（含把任意图装进邮票框的自定义邮
   <LenticularSection locale="zh" />
   <ListingHead kicker="~/TicketCard" title="票券" />
   <TicketSection locale="zh" />
+  <ListingHead
+    kicker={`~/birds · ${birds.length} 种`}
+    title={t("zh", "birdsTitle")}
+    desc={t("zh", "birdsDesc")}
+  />
+  <BirdBoard locale="zh" />
+  <!-- 授权署名（必须）：贴纸 PolyForm Shield 1.0.0；数据 MIT；
+       分类与鸟名 IOC v15.2 CC BY 3.0；形态生态 AVONET CC BY 4.0。 -->
+  <p class="birds-credit">
+    {t("zh", "birdsCredit")}
+    <a
+      href="https://github.com/alchaincyf/huashu-bird-sticker"
+      target="_blank"
+      rel="noopener noreferrer"
+      >仓库</a
+    >
+    ·
+    <a
+      href="https://github.com/alchaincyf/huashu-bird-sticker/blob/main/LICENSE.md"
+      target="_blank"
+      rel="noopener noreferrer"
+      >许可</a
+    >
+  </p>
 </Layout>
+
+<style>
+  .birds-credit {
+    max-width: 60ch;
+    margin: var(--space-l) auto 0;
+    color: var(--muted-foreground);
+    font-size: var(--step--1);
+    text-align: center;
+  }
+
+  .birds-credit a {
+    color: var(--accent);
+    text-underline-offset: 2px;
+  }
+</style>
