@@ -20,12 +20,14 @@ const birds = await getBirdViews("en")
     description="A collage of stamps and tech-stack badges you can rearrange by dragging."
     alternates={{ zh: "/board", en: "/en/board" }}
   />
-  <ListingHead
-    kicker={`~/board · ${items.length} pieces`}
-    title="Board"
-    desc="Stamps (including custom stamps built from any image) and tech-stack badges, laid out on one board. Grab a piece and drag it anywhere to rearrange the collage."
-  />
-  <Board locale="en" />
+  <board-section>
+    <ListingHead
+      kicker={`~/board · ${items.length} pieces`}
+      title="Board"
+      desc="Stamps (including custom stamps built from any image) and tech-stack badges, laid out on one board. Grab a piece and drag it anywhere to rearrange the collage."
+    />
+    <Board locale="en" />
+  </board-section>
   <ListingHead kicker={`~/LenticularCard`} title="Lenticular Card" />
   <LenticularSection locale="en" />
   <ListingHead kicker="~/TicketCard" title="Tickets" />
@@ -57,6 +59,15 @@ const birds = await getBirdViews("en")
 </Layout>
 
 <style>
+  /* The board is not suited to touch screens (<64rem): hide the whole block
+     (header included) and drop its nav entry on phones; the lenticular card,
+     tickets and bird board below stay visible. */
+  @media (width < 64rem) {
+    board-section {
+      display: none;
+    }
+  }
+
   .birds-credit {
     max-width: 60ch;
     margin: var(--space-l) auto 0;

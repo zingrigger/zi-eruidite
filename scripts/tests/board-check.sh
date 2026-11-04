@@ -54,6 +54,15 @@ assert_has dist/index.html 'href="/board"' "中文导航含 /board 入口"
 assert_has dist/index.html '收藏板' "中文导航收藏板标签"
 assert_has dist/en/index.html 'href="/en/board"' "英文导航含 /en/board 入口"
 
+# ---------- 移动端不展示收藏板（<64rem）：整块隐藏 + 导航入口收起 ----------
+assert_has dist/index.html 'data-mobile-hidden' "首页导航项带移动端隐藏标记"
+assert_has dist/board/index.html 'data-mobile-hidden' "板页导航项带移动端隐藏标记"
+assert_match dist/board/index.html 'board-section\[[^]]*\]\{display:none\}' "移动端隐藏收藏板整块（含页头）"
+assert_match dist/en/board/index.html 'board-section\[[^]]*\]\{display:none\}' "英文页同样隐藏收藏板整块"
+layout_css="$(grep -l 'data-mobile-hidden' dist/_astro/*.css 2>/dev/null | head -1)"
+[ -n "${layout_css}" ] || fail "找不到含导航移动端隐藏规则的产物 CSS"
+assert_match "${layout_css}" '\[data-mobile-hidden\]\{display:none\}' "移动端隐藏收藏板导航入口"
+
 # ---------- 板 SSR 静态渲染 ----------
 assert_file dist/board/index.html "中文收藏板路由存在"
 assert_has dist/board/index.html "<stamp-board" "板容器渲染"

@@ -77,9 +77,11 @@ import Board from "@/components/Board.astro"
   `<board-card hidden>`、原图预览 `<board-preview hidden>` 与板下提示行都不出现（`board-hint` 默认 `display: none`，靠
   `stamp-board[data-interactive]` 才亮）——
   提示行不能在无 JS 时承诺一个不存在的交互。SSR 默认 `data-tool="drag"`。
-- **窄屏（`< 64rem`）**：`<board-grid>` 切成只读 CSS 网格，忽略坐标/旋转，拖拽不绑定，
-  按 `z` 顺序陈列；浮层、信息卡片、双击预览与提示行一并禁用，物件也不进 tab 序（`tabIndex` 由
-  `enable()` 随断点设 0/−1）。
+- **窄屏（`< 64rem`）**：`/board`、`/en/board` **整块不展示收藏板**——页面里的
+  `board-section` 连同页头一起隐藏，手机导航也不出现「收藏板」入口（`NAVIGATION`
+  条目的 `mobileHidden`）。组件内部仍保留只读网格回退（`<board-grid>` 切成 CSS 网格，
+  忽略坐标/旋转、按 `z` 顺序陈列、不绑拖拽；浮层/卡片/预览/提示行与 tab 序一并禁用），
+  供其他宽屏以外的语境复用。
 - **键盘**：宽屏下每枚 `board-piece` 可 Tab 聚焦（`:focus-visible` 走全站 accent 焦点环），
   Enter / 空格 / 菜单键 / Shift+F10 拿起物件并展开浮层；浮层是 `role="toolbar"` +
   roving tabindex，方向键在 8 枚钮间走位、Enter/空格执行、Esc 放下并把焦点还给物件；

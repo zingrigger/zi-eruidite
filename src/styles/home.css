@@ -48,6 +48,41 @@ hero-card {
   }
 }
 
+/* 手机：hero 收成开放 masthead，只留第一段 */
+@media (width < 64rem) {
+  :root[data-layout] hero-card {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin-block-end: var(--space-m);
+    text-align: center;
+  }
+
+  :root[data-layout] hero-card h1 {
+    font-size: var(--step-2);
+    font-style: italic;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    color: var(--accent);
+  }
+
+  :root[data-layout] hero-card p {
+    font-size: var(--step--1);
+    line-height: 1.6;
+    max-width: var(--measure);
+    margin-inline: auto;
+  }
+
+  :root[data-layout] hero-card hero-text p:nth-of-type(n + 2) {
+    display: none;
+  }
+
+  :root[data-layout] hero-card hero-avatar {
+    margin-inline: auto;
+  }
+}
+
 /* Homepage Latest Posts */
 latest-section {
   display: block;

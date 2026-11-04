@@ -27,12 +27,14 @@ const desc = `把喜欢的邮票（含把任意图装进邮票框的自定义邮
     description="把喜欢的邮票与技术栈徽章摆在同一块板上，随手拖拽重新摆放。"
     alternates={{ zh: "/board", en: "/en/board" }}
   />
-  <ListingHead
-    kicker={`~/board · ${items.length} 枚`}
-    title="收藏板"
-    desc={`${desc}`}
-  />
-  <Board locale="zh" />
+  <board-section>
+    <ListingHead
+      kicker={`~/board · ${items.length} 枚`}
+      title="收藏板"
+      desc={`${desc}`}
+    />
+    <Board locale="zh" />
+  </board-section>
   <ListingHead kicker={`~/LenticularCard`} title="光栅卡" />
   <LenticularSection locale="zh" />
   <ListingHead kicker="~/TicketCard" title="票券" />
@@ -64,6 +66,14 @@ const desc = `把喜欢的邮票（含把任意图装进邮票框的自定义邮
 </Layout>
 
 <style>
+  /* 收藏板不适合触屏（<64rem）：整块不展示（含页头），手机导航同步去掉入口；
+     页面下部的光栅卡、票券、鸟类板照常显示 */
+  @media (width < 64rem) {
+    board-section {
+      display: none;
+    }
+  }
+
   .birds-credit {
     max-width: 60ch;
     margin: var(--space-l) auto 0;

@@ -49,14 +49,23 @@ export const SITE = {
   } satisfies Record<Locale, { paragraphs: string[] }>,
 } as const
 
-/** Nav entries: `key` → UI string; `bilingual` hrefs get a `/en` twin. */
-export const NAVIGATION: { key: UIKey; href: string; bilingual?: boolean }[] = [
+/**
+ * Nav entries: `key` → UI string; `bilingual` hrefs get a `/en` twin.
+ * `mobileHidden` entries are dropped from the phone nav (<64rem) — used for
+ * pages whose content is not shown on phones either (currently the board).
+ */
+export const NAVIGATION: {
+  key: UIKey
+  href: string
+  bilingual?: boolean
+  mobileHidden?: boolean
+}[] = [
   { key: "navBlog", href: "/blog", bilingual: true },
   { key: "navMoments", href: "/moments" },
   { key: "navTags", href: "/tags" },
   { key: "navProjects", href: "/projects" },
   // { key: "navFigures", href: "/figures" },
-  { key: "navBoard", href: "/board", bilingual: true },
+  { key: "navBoard", href: "/board", bilingual: true, mobileHidden: true },
   { key: "navAuthors", href: "/authors" },
 ]
 

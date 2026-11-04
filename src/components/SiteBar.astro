@@ -18,6 +18,7 @@ const navItems = NAVIGATION.map((item) => ({
   key: item.key,
   href: item.bilingual ? localePath(item.href, locale) : item.href,
   sectionHref: item.href,
+  mobileHidden: item.mobileHidden,
 }))
 const section = navItems.find(
   ({ sectionHref }) =>
@@ -42,7 +43,7 @@ const isArticle = stripped.startsWith("/blog/") && stripped !== "/blog/"
     <nav>
       <ul>
         {navItems.map((item) => (
-          <li>
+          <li data-mobile-hidden={item.mobileHidden ? "" : undefined}>
             <a
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
@@ -437,6 +438,103 @@ const isArticle = stripped.startsWith("/blog/") && stripped !== "/blog/"
       .collapse {
         display: block;
       }
+    }
+  }
+
+  /* ---------- 手机：品牌+操作一行，栏目一行 ---------- */
+  @media (width < 64rem) {
+    /* 两行高度由 --bar-nav-height 统一约束；1fr 吃掉底边边框后的剩余高度 */
+    :root[data-layout] site-bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 2.75rem;
+      align-items: center;
+      gap: 0;
+      block-size: var(--bar-nav-height);
+      padding-block: 0;
+    }
+
+    /* 让品牌、导航、操作成为同一网格的子项（sidebar 的 bar-brand 本就是 contents） */
+    :root[data-layout] bar-inner {
+      display: contents;
+    }
+
+    /* 触屏没有指针；布局/全宽切换在手机上无效或只剩换皮。
+       #layout-toggle 与 eye-tracker 是子组件根节点，拿不到 SiteBar 的作用域属性，必须走 :global */
+    :root[data-layout] bar-brand :global(eye-tracker),
+    :root[data-layout] :global(#layout-toggle),
+    :root[data-layout] :global(#fullwidth-toggle) {
+      display: none;
+    }
+
+    /* 导航跨两列落第二行；品牌自动落第一行第一列，操作显式落第一行第二列 */
+    :root[data-layout] site-bar nav {
+      position: relative;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      align-self: stretch;
+      min-width: 0;
+    }
+
+    /* 两行之间的极淡虚线；伪元素不占行高 */
+    :root[data-layout] site-bar nav::before {
+      content: "";
+      position: absolute;
+      inset-block-start: 0;
+      inset-inline: 0;
+      border-block-start: 1px dashed
+        color-mix(in oklab, var(--border) 45%, transparent);
+      pointer-events: none;
+    }
+
+    :root[data-layout] site-bar nav > ul {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0;
+      block-size: 100%;
+      margin: 0;
+    }
+
+    :root[data-layout] site-bar nav > ul > li {
+      display: flex;
+      align-items: center;
+      block-size: 100%;
+    }
+
+    /* 收藏板不适合触屏：手机导航不展示该入口（对应页面内容也整块隐藏） */
+    :root[data-layout] site-bar nav > ul > li[data-mobile-hidden] {
+      display: none;
+    }
+
+    :root[data-layout] site-bar nav > ul > li > a {
+      display: inline-flex;
+      align-items: center;
+      block-size: 100%;
+      font-size: var(--step--1);
+      line-height: 1;
+      white-space: nowrap;
+      /* 不写 color：沿用 sidebar/topbar 既有的 muted + hover + 分区高亮 */
+    }
+
+    :root[data-layout] site-bar nav > ul > li > a[aria-current="page"] {
+      color: var(--foreground);
+    }
+
+    /* 手机固定六个栏目：顶层/子级面包屑都不进导航 */
+    :root[data-layout] site-bar nav > ul > li[data-crumb],
+    :root[data-layout] site-bar nav ul ul {
+      display: none;
+    }
+
+    :root[data-layout] site-bar bar-actions {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+      align-self: center;
+      margin-inline: 0 -0.5rem;
+      gap: var(--space-3xs);
     }
   }
 </style>
