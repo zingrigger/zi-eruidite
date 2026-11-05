@@ -1,0 +1,276 @@
+---
+import { layoutVoronoiTreemap } from "@/lib/voronoi-treemap"
+
+export type TagMosaicEntry = {
+  tag: string
+  href: string
+  blog: number
+  moments: number
+  total: number
+}
+
+type Props = { tags: TagMosaicEntry[] }
+
+const { tags } = Astro.props
+const sorted = [...tags].sort(
+  (a, b) => b.total - a.total || a.tag.localeCompare(b.tag),
+)
+const totalRefs = sorted.reduce((n, entry) => n + entry.total, 0)
+const cells = layoutVoronoiTreemap(
+  sorted.map((entry) => ({ key: entry.tag, weight: entry.total })),
+  { width: 1000, height: 625 },
+)
+const cellByKey = new Map(cells.map((cell) => [cell.key, cell]))
+const solidKeys = new Set(
+  totalRefs > 0
+    ? sorted
+        .filter((entry) => entry.total / totalRefs >= 0.08)
+        .slice(0, 3)
+        .map((entry) => entry.tag)
+    : [],
+)
+
+const labelOf = (entry: TagMosaicEntry) => {
+  const parts: string[] = []
+  if (entry.blog > 0) parts.push(`博客 ${entry.blog} 篇`)
+  if (entry.moments > 0) parts.push(`动态 ${entry.moments} 条`)
+  return `#${entry.tag}，共 ${entry.total} 条${
+    parts.length > 0 ? `：${parts.join("、")}` : ""
+  }`
+}
+---
+
+<tag-mosaic role="region" aria-label="标签占比图">
+  <ul>
+    {sorted.map((entry, i) => {
+      const cell = cellByKey.get(entry.tag)
+      if (!cell) return null
+      const tier =
+        cell.inradius >= 55 ? "lg" : cell.inradius >= 30 ? "md" : "sm"
+      const tone = solidKeys.has(entry.tag) ? "solid" : "plain"
+      const tilt = i % 2 === 0 ? "-0.35" : "0.35"
+      const clip = cell.points
+        .map(
+          (p) =>
+            `${(((p.x - cell.box.x) / cell.box.w) * 100).toFixed(2)}% ${(((p.y - cell.box.y) / cell.box.h) * 100).toFixed(2)}%`,
+        )
+        .join(",")
+      const labelW = Math.min(
+        82,
+        ((2 * cell.inradius * 0.95) / cell.box.w) * 100,
+      )
+      return (
+        <li
+          class="tag-tile"
+          data-tier={tier}
+          data-tone={tone}
+          style={`--x:${(cell.box.x / 10).toFixed(3)}%;--y:${(cell.box.y / 6.25).toFixed(3)}%;--w:${(cell.box.w / 10).toFixed(3)}%;--h:${(cell.box.h / 6.25).toFixed(3)}%;--lx:${cell.label.x.toFixed(2)}%;--ly:${cell.label.y.toFixed(2)}%;--lw:${labelW.toFixed(1)}%;--i:${Math.min(i, 18)};--tilt:${tilt}deg`}
+        >
+          <a
+            href={entry.href}
+            aria-label={labelOf(entry)}
+            style={`clip-path:polygon(${clip})`}
+          >
+            <span class="tag-tile-label">
+              <span class="tag-tile-name">#{entry.tag}</span>
+              <span class="tag-tile-count">{entry.total}</span>
+            </span>
+          </a>
+        </li>
+      )
+    })}
+  </ul>
+</tag-mosaic>
+
+<style>
+  tag-mosaic {
+    display: var(--tags-view-mosaic, none);
+    position: relative;
+    aspect-ratio: 16 / 10;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2xl);
+    background: var(--background);
+    container-type: inline-size;
+  }
+
+  tag-mosaic > ul {
+    position: relative;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tag-tile {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    height: var(--h);
+    z-index: 0;
+    pointer-events: none;
+    transition:
+      transform 0.16s ease,
+      opacity 0.16s ease;
+  }
+
+  .tag-tile > a {
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    color: var(--foreground);
+    background: var(--gray-4);
+    text-decoration: none;
+    outline: none;
+    pointer-events: auto;
+  }
+
+  .tag-tile[data-tone="solid"] > a {
+    color: var(--primary-foreground);
+    background: var(--primary);
+  }
+
+  .tag-tile-label {
+    position: absolute;
+    left: var(--lx);
+    top: var(--ly);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: max-content;
+    max-width: var(--lw);
+    color: inherit;
+    line-height: 1.2;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .tag-tile-name {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: clamp(0.7rem, 2.2cqw, 0.95rem);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tag-tile-count {
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    opacity: 0.6;
+  }
+
+  .tag-tile[data-tier="md"] .tag-tile-name {
+    font-size: clamp(0.65rem, 1.9cqw, 0.85rem);
+  }
+
+  .tag-tile[data-tier="sm"] .tag-tile-name {
+    font-size: clamp(0.6rem, 1.6cqw, 0.78rem);
+  }
+
+  .tag-tile[data-tier="sm"] .tag-tile-count {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .tag-tile {
+      animation: tag-tile-in 460ms cubic-bezier(0.22, 0.85, 0.24, 1) backwards;
+      animation-delay: calc(var(--i) * 26ms);
+    }
+
+    .tag-tile:hover > a,
+    .tag-tile:has(a:focus-visible) > a {
+      animation: tag-tile-jelly 420ms cubic-bezier(0.22, 0.85, 0.24, 1);
+    }
+  }
+
+  @keyframes tag-tile-jelly {
+    0% {
+      transform: scale(1);
+    }
+
+    25% {
+      transform: scale(1.02, 0.98);
+    }
+
+    55% {
+      transform: scale(0.99, 1.01);
+    }
+
+    80% {
+      transform: scale(1.005, 0.995);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes tag-tile-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .tag-tile:hover,
+  .tag-tile:has(a:focus-visible) {
+    z-index: 2;
+    transform: translateY(-3px) rotate(var(--tilt)) scale(1.01, 0.99);
+  }
+
+  .tag-tile:hover > a,
+  .tag-tile:has(a:focus-visible) > a {
+    background: var(--gray-5);
+  }
+
+  .tag-tile[data-tone="solid"]:hover > a,
+  .tag-tile[data-tone="solid"]:has(a:focus-visible) > a {
+    background: color-mix(in oklab, var(--primary) 88%, var(--background));
+  }
+
+  .tag-tile:hover {
+    filter: drop-shadow(0 8px 18px rgb(0 0 0 / 0.16));
+  }
+
+  .tag-tile:has(a:focus-visible) {
+    filter: drop-shadow(2px 0 0 var(--ring)) drop-shadow(-2px 0 0 var(--ring))
+      drop-shadow(0 2px 0 var(--ring)) drop-shadow(0 -2px 0 var(--ring))
+      drop-shadow(1.5px 1.5px 0 var(--ring))
+      drop-shadow(-1.5px -1.5px 0 var(--ring))
+      drop-shadow(1.5px -1.5px 0 var(--ring))
+      drop-shadow(-1.5px 1.5px 0 var(--ring))
+      drop-shadow(0 8px 18px rgb(0 0 0 / 0.16));
+  }
+
+  tag-mosaic:has(.tag-tile a:hover) .tag-tile:not(:has(a:hover)),
+  tag-mosaic:has(.tag-tile a:focus-visible)
+    .tag-tile:not(:has(a:focus-visible)) {
+    opacity: 0.52;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tag-tile {
+      transition: opacity 0.16s ease;
+    }
+
+    .tag-tile:hover,
+    .tag-tile:has(a:focus-visible) {
+      transform: none;
+    }
+  }
+
+  @media (width < 640px) {
+    tag-mosaic {
+      aspect-ratio: 4 / 3;
+    }
+  }
+</style>

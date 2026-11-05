@@ -50,3 +50,5 @@
 - [BirdBoard 鸟类收藏板组件](bird-board.md) —— 44 目各一只的鸟贴纸拼贴板（SSR 摆
   默认 5 只 + 托盘点击飞入收集，拖拽/径向菜单/信息卡/玻璃泡预览，hotlink 外链，
   不持久化；居 `/board` 票券区下方）。
+- [TagMosaic 标签瓷砖图组件](tag-mosaic.md) —— 按引用次数铺开的加权 Voronoi
+  瓷砖拼贴（构建期 power diagram + clip-path 多边形，纯 CSS 开关，无客户端 JS）。

@@ -1,10 +1,19 @@
 ---
 import HairlineFigure from "@/components/HairlineFigure.astro"
 import MetaPage from "@/components/MetaPage.astro"
+import TagMosaic from "@/components/TagMosaic.astro"
 import Layout from "@/layouts/Layout.astro"
 import { getAllTags } from "@/lib/content"
 
 const tags = await getAllTags()
+const entries = [...tags].map(([tag, { blog, moments }]) => ({
+  tag,
+  href: `/tags/${tag}`,
+  blog: blog.length,
+  moments: moments.length,
+  total: blog.length + moments.length,
+}))
+const totalRefs = entries.reduce((n, entry) => n + entry.total, 0)
 ---
 
 <Layout crumbs={[{ label: "标签", href: "/tags" }]}>
@@ -24,18 +33,35 @@ const tags = await getAllTags()
       />
     </div>
   </header>
-  <ul>
-    {[...tags].map(([tag, { blog, moments }]) => {
-        const total = blog.length + moments.length
-        return (
-          <li>
-            <a href={`/tags/${tag}`}
-              >#{tag}<tag-count>{total}</tag-count></a
-            >
-          </li>
-        )
-      })}
-  </ul>
+  <tags-explorer>
+    {tags.size > 0 && (
+      <div class="tags-toolbar">
+        <span class="tags-legend">
+          面积 = 被引用次数（共 {totalRefs} 次）
+        </span>
+        <label class="tags-switch">
+          <span class="tags-switch-label">瓷砖视图</span>
+          <input type="checkbox" role="switch" autocomplete="off" />
+          <span class="tags-switch-track" aria-hidden="true">
+            <span class="tags-switch-thumb" />
+          </span>
+        </label>
+      </div>
+    )}
+    <ul class="tags-list">
+      {[...tags].map(([tag, { blog, moments }]) => {
+          const total = blog.length + moments.length
+          return (
+            <li>
+              <a href={`/tags/${tag}`}
+                >#{tag}<tag-count>{total}</tag-count></a
+              >
+            </li>
+          )
+        })}
+    </ul>
+    {tags.size > 0 && <TagMosaic tags={entries} />}
+  </tags-explorer>
 </Layout>
 
 <style>
@@ -86,7 +112,7 @@ const tags = await getAllTags()
     color: var(--muted-foreground);
   }
 
-  ul {
+  .tags-list {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2xs);
@@ -109,6 +135,116 @@ const tags = await getAllTags()
         opacity: 0.6;
       }
     }
+  }
+
+  tags-explorer {
+    display: block;
+    --tags-view-mosaic: none;
+  }
+
+  tags-explorer:has(.tags-switch input:checked) .tags-list {
+    display: none;
+  }
+
+  tags-explorer:has(.tags-switch input:checked) {
+    --tags-view-mosaic: block;
+  }
+
+  tags-explorer:has(.tags-switch input:checked) .tags-legend {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .tags-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    min-height: 1.75rem;
+    margin-bottom: var(--space-m);
+  }
+
+  .tags-legend {
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: calc(var(--step--1) - 1px);
+    color: var(--muted-foreground);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .tags-switch {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--space-2xs);
+    margin-inline-start: auto;
+    cursor: pointer;
+  }
+
+  .tags-switch-label {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--muted-foreground);
+  }
+
+  .tags-switch:hover .tags-switch-label {
+    color: var(--foreground);
+  }
+
+  .tags-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .tags-switch-track {
+    position: relative;
+    display: inline-block;
+    box-sizing: border-box;
+    width: 2.25rem;
+    height: 1.25rem;
+    background: var(--gray-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease;
+  }
+
+  .tags-switch-thumb {
+    position: absolute;
+    top: 50%;
+    left: 0.125rem;
+    width: 1rem;
+    height: 1rem;
+    background: var(--background);
+    border-radius: var(--radius-full);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+    transform: translateY(-50%);
+    transition: transform 0.18s ease;
+  }
+
+  .tags-switch input:checked + .tags-switch-track {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .tags-switch input:checked + .tags-switch-track .tags-switch-thumb {
+    transform: translate(1rem, -50%);
+  }
+
+  .tags-switch input:focus-visible + .tags-switch-track {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
   @media (width < 640px) {
