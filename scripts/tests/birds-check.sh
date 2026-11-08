@@ -53,44 +53,44 @@ npm run build
 # ---------- 独立 /birds 路由已撤（入口只剩 /board 分区） ----------
 assert_lacks dist/index.html 'href="/birds"' "中文导航不含 /birds 入口"
 assert_lacks dist/en/index.html 'href="/en/birds"' "英文导航不含 /en/birds 入口"
-assert_lacks dist/sitemap-0.xml '/birds' "sitemap 不含 /birds"
+assert_lacks dist/sitemap-0.xml 'https://example.com/birds' "sitemap 不含旧独立 /birds 路由"
 
 # ---------- zh /board 内的鸟类 SSR 骨架 ----------
 assert_file dist/board/index.html "中文 /board 路由存在"
-assert_has dist/board/index.html "<bird-board" "bird-board 容器渲染"
-assert_has dist/board/index.html "<bird-tray" "托盘渲染"
-assert_match dist/board/index.html 'bird-piece[^>]*--x:' "默认 piece 带 SSR --x"
-assert_has dist/board/index.html 'class="bird-img"' "鸟图按徽章范式渲染"
-assert_has dist/board/index.html 'raw.githubusercontent.com' "hotlink 外链入产物"
+assert_has dist/board/birds/index.html "<bird-board" "bird-board 容器渲染"
+assert_has dist/board/birds/index.html "<bird-tray" "托盘渲染"
+assert_match dist/board/birds/index.html 'bird-piece[^>]*--x:' "默认 piece 带 SSR --x"
+assert_has dist/board/birds/index.html 'class="bird-img"' "鸟图按徽章范式渲染"
+assert_has dist/board/birds/index.html 'raw.githubusercontent.com' "hotlink 外链入产物"
 
 # ---------- 默认 5 只在板上 ----------
 for id in Aix_galericulata Calypte_anna Aptenodytes_forsteri Alcedo_atthis Ara_macao; do
-  assert_match dist/board/index.html "bird-piece[^>]*data-id=\"$id\"" "默认 5 只之一 $id 在板上"
+  assert_match dist/board/birds/index.html "bird-piece[^>]*data-id=\"$id\"" "默认 5 只之一 $id 在板上"
 done
 
 # ---------- 授权署名（随分区迁入 /board，硬要求） ----------
-assert_has dist/board/index.html 'PolyForm' "鸟类区含许可署名"
-assert_has dist/board/index.html 'huashu-bird-sticker' "鸟类区含仓库链接"
+assert_has dist/board/birds/index.html 'PolyForm' "鸟类区含许可署名"
+assert_has dist/board/birds/index.html 'huashu-bird-sticker' "鸟类区含仓库链接"
 
 # ---------- en /board 内的英文名 + 无 .en 泄漏 ----------
 assert_file dist/en/board/index.html "英文 /en/board 路由存在"
-assert_has dist/en/board/index.html 'Emperor Penguin' "英文分区取 en 名"
-assert_has dist/board/index.html '帝企鹅' "中文分区取 zh 名"
-assert_lacks dist/board/index.html 'astro.en' "中文页不泄漏 .en id"
+assert_has dist/en/board/birds/index.html 'Emperor Penguin' "英文分区取 en 名"
+assert_has dist/board/birds/index.html '帝企鹅' "中文分区取 zh 名"
+assert_lacks dist/board/birds/index.html 'astro.en' "中文页不泄漏 .en id"
 
 # ---------- Task 2：客户端激活脚本入产物 ----------
 # 按内容 grep 定位 chunk（不钉文件名，应对 Astro chunk 漂移）；
 # esbuild 会把字符串字面量改写成反引号，故引号形态用字符类兜住
-bird_js="$(grep -rlE 'customElements\.define\(.bird-board' dist/_astro 2>/dev/null | head -1)"
+bird_js="$(grep -rlE 'customElements\.define\(.bird-board' dist/_astro 2>/dev/null | head -1 || true)"
 [ -n "${bird_js}" ] || fail "找不到 bird-board 激活脚本（组件脚本未入产物？）"
 assert_has "${bird_js}" "setPointerCapture" "拖拽用 Pointer Capture"
 assert_has "${bird_js}" "matchMedia" "宽屏门槛判定"
 
 # ---------- Task 3：托盘飞入 + 重置 + 收集计数 ----------
-assert_has dist/board/index.html 'class="bird-reset"' "重置按钮渲染"
-assert_has dist/board/index.html 'data-count' "收集计数占位渲染"
+assert_has dist/board/birds/index.html 'class="bird-reset"' "重置按钮渲染"
+assert_has dist/board/birds/index.html 'data-count' "收集计数占位渲染"
 # @keyframes 在 scoped <style> 里，Astro 可能提为 CSS chunk：HTML 与产物 CSS 两处任一命中即可
-if grep -qE '@keyframes bird-toss|bird-toss' dist/board/index.html || grep -qsE '@keyframes bird-toss' dist/_astro/*.css; then
+if grep -qE '@keyframes bird-toss|bird-toss' dist/board/birds/index.html || grep -qsE '@keyframes bird-toss' dist/_astro/*.css; then
   pass "飞入关键帧入产物"
 else
   fail "飞入关键帧未入产物（bird-toss 在 HTML 与 CSS chunk 都找不到）"
@@ -101,5 +101,5 @@ assert_has "${bird_js}" "bird-enter" "飞入类名入脚本"
 assert_has "${bird_js}" "data-astro-cid" "cid 克隆约定入脚本"
 
 # ---------- Task 4：双击原图预览（复用 glass-bubble） ----------
-assert_match dist/board/index.html 'class="[^"]*bird-preview' "预览 dialog 骨架渲染"
+assert_match dist/board/birds/index.html 'class="[^"]*bird-preview' "预览 dialog 骨架渲染"
 assert_has src/styles/glass-bubble.css 'bird-preview' "全局样式覆盖 bird-preview"

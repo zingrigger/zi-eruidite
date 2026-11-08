@@ -195,12 +195,14 @@ Composer，生产构建零痕迹）：点击实时检测译文状态——无译
 
 ### dev 收藏板布局编辑器
 
-`astro dev` 下 `/board` 板下有「保存布局」浮条（模式同 Moment Composer，生产
+`astro dev` 下 `/board/stamps` 板下有「保存布局」浮条（模式同 Moment Composer，生产
  HTML 无 markup、无端点）：宽屏里拖拽/缩放/旋转/镜像/叠放后点击，浮条采集各
  `board-piece[data-id]` 的几何 `POST /api/board/layout`，由 `patchBoardSource` 按 `id`
  逐字段改写 `src/data/board.ts`（保留注释与非几何字段，默认值不落字段，同值不重写）。
 写入目标默认 `src/data/board.ts`，可用 `BOARD_LAYOUT_SOURCE` 覆盖（测试隔离用）。
-详见 [docs/components/board.md](docs/components/board.md) §9。回归：
+详见 [docs/components/board.md](docs/components/board.md) §9。`/board` 本身是「玩具柜」
+列表页（只给入口，展品在其子页 `/board/<slug>`，登记在 `src/data/board-sections.ts`；
+结构与窄屏语义见 [docs/components/board-index.md](docs/components/board-index.md)）。回归：
 `bash scripts/tests/board-source-patch-check.sh`（离线）与 `bash scripts/tests/board-layout-check.sh`（起停 dev server）。
 
 ## 测试与验证指南

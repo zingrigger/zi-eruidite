@@ -8,8 +8,9 @@
 Tab+Enter 拿起一只弹出径向浮层（缩放、旋转、镜像、置顶、置底、信息），信息卡从
 鸟自带的 `data-*` 建档（双语名 + 目·科（拉丁）+ IUCN + 学名·拼音 + 源链），双击
 任一鸟弹出 [GlassBubble](./glass-bubble.md) 玻璃泡原图预览，「重置」精确回到默认
-5 只 + 满 39 托盘。纯前端、不持久化。作为 `/board`、`/en/board` 页票券区下方的
-「鸟类收藏板」分区呈现（曾是独立 `/birds` 路由，已撤销迁入 `/board`）。
+5 只 + 满 39 托盘。纯前端、不持久化。作为「鸟类收藏板」子页呈现：
+`/board/birds` 与 `/en/board/birds`（曾是独立 `/birds` 路由，先迁入 `/board` 单页的
+分区，再拆成子页；入口只有列表页 `/board` 上的一条，手机导航无入口）。
 
 ## 2. 文件位置
 
@@ -21,9 +22,11 @@ Tab+Enter 拿起一只弹出径向浮层（缩放、旋转、镜像、置顶、�
 - 样式：主体内联在 `BirdBoard.astro` 的 `<style>`；预览 dialog
   （`<dialog class="bird-preview">`）的呈现住在 `src/styles/glass-bubble.css`
   （全局，与 `dialog.board-preview` 同族并列规则）。
-- 宿主页面：`src/pages/board/index.astro`、`src/pages/en/board/index.astro`
-  票券区下方的分区（`ListingHead` + `<BirdBoard>` + 授权署名段，文案取
-  `t(locale, "birdsCredit")`）；无独立路由与导航入口（曾有 `/birds`，已撤）。
+- 宿主：`src/components/exhibits/BirdsExhibit.astro`（`ListingHead` + `<BirdBoard>` +
+  授权署名段，文案取 `t(locale, "birdsCredit")`），经 `src/components/BoardExhibit.astro`
+  套上页面外壳。
+- 路由：`src/pages/board/[slug].astro`、`src/pages/en/board/[slug].astro`（slug=`birds`），
+  由 `src/data/board-sections.ts` 的登记派生；不再有独立的 `/birds` 页面文件。
 - 回归：`scripts/tests/birds-check.sh`。
 
 ## 3. 快速上手
@@ -87,10 +90,11 @@ import BirdBoard from "@/components/BirdBoard.astro"
 ## 7. 注意事项
 
 - **不持久化**：无 localStorage、无后端；一切几何只写内存 CSS 变量，刷新回默认
-  5 只（与 `/board` 同哲学）。
+  5 只（与邮票板 `/board/stamps` 同哲学）。
 - **hotlink 与授权**：贴纸不 vendor、不进构建产物；页脚署名为合规硬要求（花叔 /
   鸣迹 + PolyForm Shield 1.0.0 + IOC v15.2 CC BY 3.0 + AVONET CC BY 4.0 +
-  仓库/许可链接），在 `/board` 页鸟类区尾部，改动 `/board` 页时不得移除。
+  仓库/许可链接），住在 `src/components/exhibits/BirdsExhibit.astro` 尾部（即
+  `/board/birds` 页板下方），改动鸟板展品时不得移除；两种语言都渲染。
 - **数据住 DOM**：每只鸟的完整信息以 `data-id data-name data-name-alt data-order
   data-family data-family-latin data-sci data-pinyin data-iucn data-url` 挂在
   `bird-piece` 与托盘按钮上；信息卡与飞入新建的 piece 全部从这些 `data-*` 取，
@@ -98,17 +102,17 @@ import BirdBoard from "@/components/BirdBoard.astro"
 - **动态建元素必须克隆 scoped 属性**：Astro scoped 样式带 `[data-astro-cid-*]`
   属性选择器，`addBird()` 用 `createElement` 建的 piece 及其 `<img>`/`<span>`
   子元素须复制默认件的同名 cid 属性（见脚本 `applyScope`），否则 `.bird-img`
-  尺寸与 `bird-toss` 关键帧全部选不中。这是与 `/board`（无 JS 建件）最大的实现差异。
+  尺寸与 `bird-toss` 关键帧全部选不中。这是与邮票板（无 JS 建件）最大的实现差异。
 - **预览取图须 CORS**：玻璃泡把原图上传 WebGL 纹理，hotlink 跨域位图必须以
   `crossOrigin="anonymous"` 获取（raw 域发 `Access-Control-Allow-Origin: *`），
   否则 canvas 被污染、`texImage2D` 抛 SecurityError；共享模块
-  `src/lib/glass-bubble.ts` 已统一补上，同源图（`/board`）忽略该属性不受影响。
+  `src/lib/glass-bubble.ts` 已统一补上，同板的邮票板忽略该属性不受影响。
 - **径向菜单文案**：op 按钮（放大/缩小/旋转/镜像/置顶/置底）复用 `board*` i18n
   键（同一套图标语义），仅 `birdsInfo` / `birdsMenuLabel` 等为鸟类板独有。
-- **与 `/board` 的关系**：本组件是 `Board.astro` 的 fork（拖拽 / 径向菜单 / 信息卡 /
+- **与邮票板的关系**：本组件是 `Board.astro` 的 fork（拖拽 / 径向菜单 / 信息卡 /
   `bird-toss` 入场 / 双击预览机制照其裁剪），**不共享引擎**——按 spec 决议，等出现
-  第三个 board 类页面再按 rule of three 抽 `board-engine`。改 `/birds` 不会碰
-  `/board`，反之亦然。
+  第三个 board 类页面再按 rule of three 抽 `board-engine`。邮票板（`/board/stamps`）
+  与鸟板（`/board/birds`）是两条独立路由，互不影响。
 - **托盘缩略图 = 全尺寸 webp**：CDN 无缩略图变体，靠 `loading="lazy"` + CSS 缩小
   显示；这是 hotlink 方案的既定取舍。
 
@@ -124,11 +128,11 @@ import { t } from "@/lib/i18n"
 const birds = await getBirdViews("zh")
 ---
 
-<!-- /board 页票券区下方（Layout 内） -->
+<!-- /board/birds 子页（BirdsExhibit.astro 内，Layout 由 BoardExhibit 套） -->
 <ListingHead
-  kicker={`~/birds · ${birds.length} 种`}
-  title={t("zh", "birdsTitle")}
-  desc={t("zh", "birdsDesc")}
+  kicker="~/board/birds"
+  title={t(locale, "birdsTitle")}
+  desc={t(locale, "birdsDesc")}
 />
 <BirdBoard locale="zh" />
 <p class="birds-credit">{t("zh", "birdsCredit")} …（仓库 / 许可链接）</p>

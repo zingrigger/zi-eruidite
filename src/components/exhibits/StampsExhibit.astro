@@ -1,0 +1,92 @@
+---
+import Board from "@/components/Board.astro"
+import ListingHead from "@/components/ListingHead.astro"
+import { t, type Locale } from "@/lib/i18n"
+
+type Props = {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+---
+
+<ListingHead
+  kicker="~/board/stamps"
+  title={t(locale, "stampsTitle")}
+  desc={t(locale, "stampsDesc")}
+/>
+<div data-wide-only>
+  <Board locale={locale} />
+</div>
+<p class="wide-notice">{t(locale, "boardWideOnly")}</p>
+<div class="refs">
+  <p class="refs-label">{t(locale, "stampsRefsLabel")}</p>
+  <ol class="refs-list">
+    <li>
+      <a
+        href="https://df.fenx.work/llm-things/"
+        target="_blank"
+        rel="noopener noreferrer"
+        >df.fenx.work/llm-things</a
+      >
+    </li>
+    <li>
+      <a
+        href="https://marijanapav.com/stamps"
+        target="_blank"
+        rel="noopener noreferrer"
+        >marijanapav.com/stamps</a
+      >
+    </li>
+  </ol>
+  <p class="refs-credit">{t(locale, "stampsSvgCredit")}</p>
+</div>
+
+<style>
+  .wide-notice {
+    display: none;
+    max-width: 60ch;
+    margin: var(--space-m) auto;
+    color: var(--muted-foreground);
+    text-align: center;
+  }
+
+  /* 板需要宽屏才摆得开：窄屏收掉板、留一句提示（页头照常显示） */
+  @media (width < 64rem) {
+    [data-wide-only] {
+      display: none;
+    }
+
+    .wide-notice {
+      display: block;
+    }
+  }
+
+  .refs {
+    max-width: 60ch;
+    margin-block-start: var(--space-l);
+    color: var(--muted-foreground);
+    font-size: var(--step--1);
+  }
+
+  .refs-label {
+    margin: 0 0 var(--space-3xs);
+    font-family: var(--font-mono);
+    letter-spacing: 0.04em;
+  }
+
+  .refs-list {
+    margin: 0;
+    padding-inline-start: var(--space-m);
+    overflow-wrap: anywhere;
+  }
+
+  .refs-list a {
+    color: var(--accent);
+    text-underline-offset: 2px;
+  }
+
+  .refs-credit {
+    margin: var(--space-2xs) 0 0;
+  }
+</style>

@@ -14,9 +14,10 @@
 - 拼贴容器：`src/components/TicketSection.astro`（内联 `TICKETS` 数组 + `<ticket-showcase>`/`<ticket-collage>` 布局 + 「默认/图片」主题切换 + 一个注册 `<ticket-showcase>` 的 `<script>`：先查 `customElements.get`、`connectedCallback` 里挂主题监听与 `mountTicketTilt`、`disconnectedCallback` 里逐个 destroy）
 - 倾斜接线：`src/lib/ticket-tilt.ts`（`mountTicketTilt()`：给每个 `<ticket-slot>` 挂悬停倾斜，物理复用 `src/lib/lenticular-spring.ts` 的纯函数；只往 slot 写 `--tk-rx`/`--tk-ry`，带 `deg`）
 - 样式：各组件内的 scoped `<style>`；票券的图片显隐用 `:global([data-theme="image"]) .tk-fill` 跨到祖先 showcase（祖先在别的组件，故 `:global`）
-- 在用它的地方：`/board` 与 `/en/board` 的「票券 / Tickets」小节（`LenticularSection` 之后）
-- 回归：`scripts/tests/board-check.sh`（对 `dist/board/index.html` 断言票券容器、三版式、
-  条形码/点阵码、mask、双语标题）
+- 在用它的地方：`/board/tickets` 与 `/en/board/tickets`「票券 / Tickets」子页
+  （`src/components/exhibits/TicketsExhibit.astro` 包住 `TicketSection`）
+- 回归：`scripts/tests/board-check.sh`（对 `dist/board/tickets/index.html` 断言票券容器、
+  三版式、条形码/点阵码、mask、双语标题）
 
 ## 快速上手
 
@@ -38,11 +39,11 @@ import TicketCard from "@/components/TicketCard.astro"
 />
 ```
 
-实际页面用封装 `TicketSection`（无 props，票面文案恒为英文设计图案），一次铺一组：
+实际页面用封装 `TicketSection`（只吃一个 `locale`；票面文案恒为英文设计图案），一次铺一组：
 
 ```astro
-<ListingHead kicker="~/TicketCard" title="票券" />
-<TicketSection />
+<ListingHead kicker="~/board/tickets" title={t(locale, "ticketsTitle")} desc={t(locale, "ticketsDesc")} />
+<TicketSection locale={locale} />
 ```
 
 ## Props

@@ -108,7 +108,7 @@ cmp -s "$FIX" "$WORK/fix.b3" || fail "B4：同值二次不应改变 fixture（�
 pass "B4：同值幂等不改写"
 
 # B5：dev 页面挂载编辑条（生产侧零痕迹由 board-check.sh 的 assert_lacks 兜住，两侧夹逼 dev-only 契约）
-curl -s "$BASE/board" -o "$WORK/page.html"
+curl -s "$BASE/board/stamps" -o "$WORK/page.html"
 assert_has "$WORK/page.html" "<board-editor" "B5：dev 渲染编辑条（仅开发模式挂载）"
 
 cleanup_all

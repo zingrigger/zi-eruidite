@@ -66,7 +66,14 @@ assert_count_ge() { # $1=文件 $2=片段 $3=最小次数 $4=说明
 # 而本文件顶部的注释里就写着“<lenticular-card>”（实测这样会从注释一直截到
 # 真正结束标签，中间吞下 <main tabindex="-1"> 导致误报）
 card_chunk() { # $1=文件
-  awk '/<lenticular-card[ 	>]/{f=1} f{print} /<\/lenticular-card>/{f=0}' "${1}"
+  # 先把卡的首尾标签各自顶到独立行：展品拆页后 Astro 会把 <main tabindex="-1">
+  # 与 <lenticular-card 挤在同一行输出，只按行开关会把版式外壳当成卡的 markup，
+  # 于是「静态态不可聚焦」这类卡内断言会被外壳属性误伤（同上注释的同一类坑）
+  awk '{
+    gsub(/<lenticular-card/, "\n<lenticular-card")
+    gsub(/<\/lenticular-card>/, "</lenticular-card>\n")
+    print
+  }' "${1}" | awk '/<lenticular-card[ \t>]/{f=1} f{print} /<\/lenticular-card>/{f=0}'
 }
 
 assert_card_lacks() { # $1=文件 $2=片段 $3=说明
@@ -98,8 +105,8 @@ printf 'SITE_URL=https://example.com\n' >.env
 # ---------- 构建 ----------
 npm run build
 
-ZH=dist/board/index.html
-EN=dist/en/board/index.html
+ZH=dist/board/lenticular-card/index.html
+EN=dist/en/board/lenticular-card/index.html
 CSS=dist/_astro
 
 assert_file "${ZH}" "中文收藏板页产出"
@@ -139,8 +146,10 @@ assert_card_lacks "${ZH}" 'aria-valuemax' "值域由挂载后的 slider 提供"
 assert_card_lacks "${ZH}" 'aria-live' "卡内不含 aria-live（valuetext 已足够）"
 
 # ---------- 图 2 不依赖 JS 也必须被请求到：卡 + 原邮票各一份 ----------
-assert_count_ge "${ZH}" 'DONGLONGDONG-2' 2 "云海图在卡与邮票里各一份"
-assert_count_ge "${ZH}" 'DONGLONGDONG-3' 2 "星夜图在卡与邮票里各一份"
+assert_count_ge "${ZH}" 'DONGLONGDONG-2' 1 "云海图在卡里（邮票已迁至 /board/stamps）"
+assert_count_ge "${ZH}" 'DONGLONGDONG-3' 1 "星夜图在卡里（邮票已迁至 /board/stamps）"
+assert_has dist/board/stamps/index.html 'DONGLONGDONG-2' "原邮票仍在邮票子页"
+assert_has dist/board/stamps/index.html 'DONGLONGDONG-3' "原邮票仍在邮票子页"
 
 # ---------- 渲染契约的 CSS 消费层（Task 2） ----------
 # 同样要钉到具体文件：全局样式会进 Layout.*.css，而 isolation:isolate 等写法
