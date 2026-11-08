@@ -214,6 +214,13 @@ Composer，生产构建零痕迹）：点击实时检测译文状态——无译
 若只使用 npm 工作流，对应命令为 `npm run format:check` 和 `npm run build`。
 涉及可视样式、排版或路由变化时，请在本地开发服务器中手动检查相关页面。
 
+`biome.json` 的 `files.includes` 排除了 `.agents/skills/anatomy/**` 与
+`.agents/skills/hairline-create/**`：那是 vendored 技能产物（约 12 MB 生成 HTML 与
+别人的脚本），不是本项目源码。格式化它们只会在每次技能更新时灌进数千行无意义 diff
+（实测 hairline-create 一个目录就 3930 行），而 `npm run format` 会顺手改写这 120 个
+文件。排除后 `format:check` 只反映项目代码，别把这两条当冗余删掉。（`biome.json` 不
+接受注释，理由只能写在这里。）
+
 部署脚本另有干跑校验：`bash scripts/tests/deploy-check.sh` —— 在 `/tmp` 临时 bare 仓库上覆盖全流程与错误路径（不触碰真实 Pages 仓库；测试期间临时使用受控 `.env`，退出时恢复原文件），运行前需已安装依赖。
 
 翻译脚本另有离线桩校验：`bash scripts/tests/translate-check.sh` ——
