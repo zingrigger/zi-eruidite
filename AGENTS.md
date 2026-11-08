@@ -294,3 +294,10 @@ The five canonical triage labels are used: `needs-triage`, `needs-info`, `ready-
 ### Domain docs
 
 Single-context layout. See `docs/agents/domain.md`.
+
+## Project memory
+
+本 repo 自带可移植记忆（跨 harness）。开局读 `docs/memory/MEMORY.md`（注入层索引，
+保持短）。学到耐久、显著的要点（决策/坑/已验证规则/偏好）就写一条
+`docs/memory/notes/YYYY-MM-DD-<slug>.md`（蒸馏，非复制）。要整理/纠错/提升记忆，
+照 `docs/memory/DREAM.md` 跑（可手动，也可由定时任务触发）。
