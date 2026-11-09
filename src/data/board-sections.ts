@@ -26,5 +26,5 @@ export const BOARD_SECTIONS: BoardSection[] = [
     descKey: "lenticularDesc",
   },
   { slug: "tickets", titleKey: "ticketsTitle", descKey: "ticketsDesc" },
-  { slug: "birds", titleKey: "birdsTitle", descKey: "birdsDesc" },
+  // { slug: "birds", titleKey: "birdsTitle", descKey: "birdsDesc" },
 ]
