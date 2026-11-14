@@ -50,15 +50,19 @@ const options = [currentYear, ...years.filter((y) => y !== currentYear)]
       </select>
     </label>
   </div>
-  <div class="activity-scroll">
-    <div
-      class="activity-grid"
-      data-grid
-      aria-hidden="true"
-      style={`--weeks: ${defaultData.weeks}`}
-      set:html={renderGrid(defaultData, todayStr)}
-    ></div>
+  <div class="activity-scroll-wrap">
+    <div class="activity-scroll" data-scroll role="group" aria-label="动态年历">
+      <div
+        class="activity-grid"
+        data-grid
+        aria-hidden="true"
+        style={`--weeks: ${defaultData.weeks}`}
+        set:html={renderGrid(defaultData, todayStr)}
+      ></div>
+    </div>
+    <span class="activity-fade" aria-hidden="true"></span>
   </div>
+  <span class="activity-scroll-hint" aria-hidden="true">横向滑动</span>
   <div class="activity-foot">
     <span
       class="activity-caption"
@@ -99,7 +103,10 @@ const options = [currentYear, ...years.filter((y) => y !== currentYear)]
     const caption = root.querySelector<HTMLElement>("[data-caption]")
     const srList = root.querySelector<HTMLElement>("[data-sr-list]")
     const tooltip = root.querySelector<HTMLElement>("[data-tooltip]")
-    if (!select || !grid || !caption || !srList || !tooltip) return
+    const scroll = root.querySelector<HTMLElement>("[data-scroll]")
+    const fade = root.querySelector<HTMLElement>(".activity-fade")
+    if (!select || !grid || !caption || !srList || !tooltip || !scroll || !fade)
+      return
 
     let payload: {
       years: number[]
@@ -111,6 +118,52 @@ const options = [currentYear, ...years.filter((y) => y !== currentYear)]
     } catch {
       return
     }
+
+    const updateFade = () => {
+      const atEnd =
+        scroll.scrollLeft + scroll.clientWidth >= scroll.scrollWidth - 1
+      scroll.classList.toggle("is-at-end", atEnd)
+    }
+
+    const focusScroll = () => {
+      const active = [
+        ...grid.querySelectorAll<HTMLElement>(
+          '.activity-cell[data-level]:not([data-level="0"])',
+        ),
+      ]
+      const target =
+        active[active.length - 1] ??
+        grid.querySelector<HTMLElement>("[data-today]")
+      if (!target) {
+        scroll.scrollLeft = 0
+        updateFade()
+        return
+      }
+      const max = scroll.scrollWidth - scroll.clientWidth
+      scroll.scrollLeft = Math.max(
+        0,
+        Math.min(target.offsetLeft - scroll.clientWidth + 64, max),
+      )
+      updateFade()
+    }
+
+    scroll.addEventListener("scroll", updateFade, { passive: true })
+    window.addEventListener("resize", updateFade, { passive: true })
+    focusScroll()
+
+    // 仅窄屏可横滑：桌面不进入 Tab 序，也不宣称可滚动
+    const mq = window.matchMedia("(width < 40rem)")
+    const syncScrollRegion = () => {
+      if (mq.matches) {
+        scroll.setAttribute("tabindex", "0")
+        scroll.setAttribute("aria-label", "动态年历，可横向滚动")
+      } else {
+        scroll.removeAttribute("tabindex")
+        scroll.setAttribute("aria-label", "动态年历")
+      }
+    }
+    mq.addEventListener("change", syncScrollRegion)
+    syncScrollRegion()
 
     // 用箭头函数（而非函数声明）：在守卫窄化之后创建，捕获的 tooltip/root 保持非空
     const hideTooltip = () => {
@@ -159,6 +212,7 @@ const options = [currentYear, ...years.filter((y) => y !== currentYear)]
       grid.style.setProperty("--weeks", String(data.weeks))
       caption.innerHTML = formatCaption(year, data.stats, payload.currentYear)
       srList.innerHTML = renderSrList(data)
+      focusScroll()
     })
   })()
 </script>
@@ -218,11 +272,21 @@ const options = [currentYear, ...years.filter((y) => y !== currentYear)]
   }
 
   .activity-scroll {
-    /* clip 而非 auto：网格已自适应容器宽度，仅裁剪标签越界，不产生横向滚动条 */
+    /* clip 而非 auto：桌面网格已自适应容器宽度；<40rem 由媒体查询切回横向滚动 */
     overflow-x: clip;
   }
 
+  .activity-scroll-wrap {
+    position: relative;
+  }
+
+  .activity-fade,
+  .activity-scroll-hint {
+    display: none;
+  }
+
   .activity-grid {
+    position: relative; /* 让 cell.offsetLeft 相对网格内容计算 */
     display: grid;
     /* minmax(0, 1fr)：列最小尺寸为 0，月份标签只视觉溢出、不撑大列宽 */
     grid-template-columns: var(--gutter, 20px) repeat(
@@ -346,5 +410,56 @@ const options = [currentYear, ...years.filter((y) => y !== currentYear)]
     clip: rect(0 0 0 0);
     white-space: nowrap;
     border: 0;
+  }
+
+  @media (width < 40rem) {
+    .activity-scroll {
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+    }
+
+    .activity-grid {
+      grid-template-columns: var(--gutter, 20px) repeat(
+          var(--weeks, 53),
+          var(--cell)
+        );
+      grid-template-rows: auto repeat(7, var(--cell));
+      inline-size: max-content;
+    }
+
+    /* 周几栏在横滑时贴住左侧；背景盖住滚过的格子 */
+    .activity-weekday {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      justify-self: stretch;
+      inline-size: 100%;
+      text-align: right;
+      background: var(--background);
+    }
+
+    .activity-fade {
+      display: block;
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 0;
+      inline-size: 24px;
+      background: linear-gradient(to right, transparent, var(--background));
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+
+    .activity-scroll.is-at-end + .activity-fade {
+      opacity: 0;
+    }
+
+    .activity-scroll-hint {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: var(--space-3xs);
+      font-family: var(--font-mono);
+      font-size: calc(var(--step--1) - 1px);
+      color: var(--muted-foreground);
+    }
   }
 </style>

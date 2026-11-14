@@ -1,0 +1,1553 @@
+---
+import { getBirdViews } from "@/lib/content"
+import { t, type Locale } from "@/lib/i18n"
+import type { HTMLAttributes } from "astro/types"
+
+type Props = {
+  locale: Locale
+} & HTMLAttributes<"div">
+
+const { locale, ...attrs } = Astro.props
+const views = await getBirdViews(locale)
+const onBoard = views.filter((v) => v.isDefault)
+const inTray = views.filter((v) => !v.isDefault)
+---
+
+<bird-board {...attrs} data-tool="drag">
+  <bird-grid>
+    {onBoard.map((v, i) => (
+        <bird-piece
+          data-id={v.id}
+          data-name={v.name}
+          data-name-alt={v.nameAlt}
+          data-order={v.orderLabel}
+          data-family={v.familyLabel}
+          data-family-latin={v.familyLatin}
+          data-sci={v.sci}
+          data-pinyin={v.pinyin ?? ""}
+          data-iucn={v.iucn ?? ""}
+          data-url={v.url}
+          role="group"
+          aria-label={v.name}
+          style={`--x:${v.x}; --y:${v.y}; --rot:${v.rotate}deg; --z:${v.z ?? i + 1}; --s:1; --sx:1`}
+        >
+          <img
+            class="bird-img"
+            src={v.url}
+            alt={v.name}
+            loading="lazy"
+            decoding="async"
+            onerror="this.hidden=true"
+          />
+          <span class="bird-name">{v.name}</span>
+        </bird-piece>
+      ))}
+  </bird-grid>
+  <!-- 托盘：其余 39 只驻留于此，宽屏点击飞入上板（Task 3 激活）；无 JS 时是静态一览，
+       窄屏回退为只读网格、名字常显。数据同样住 DOM（data-*），飞入新建 piece 时照抄。 -->
+  <bird-tray aria-label={t(locale, "birdsTrayLabel")}>
+    {inTray.map((v) => (
+        <button
+          type="button"
+          class="tray-item"
+          data-id={v.id}
+          data-name={v.name}
+          data-name-alt={v.nameAlt}
+          data-order={v.orderLabel}
+          data-family={v.familyLabel}
+          data-family-latin={v.familyLatin}
+          data-sci={v.sci}
+          data-pinyin={v.pinyin ?? ""}
+          data-iucn={v.iucn ?? ""}
+          data-url={v.url}
+          aria-label={`${t(locale, "birdsAddAria")} ${v.name}`}
+        >
+          <img
+            class="tray-thumb"
+            src={v.url}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onerror="this.hidden=true"
+          />
+          <span class="tray-name">{v.name}</span>
+        </button>
+      ))}
+  </bird-tray>
+  <!-- 径向操作浮层：右键 / 长按 / 键盘（Tab 到鸟按 Enter 或菜单键）唤起，默认 hidden。
+       图标与 op 语义照抄 /board；op 文案复用 board* 键（同一套图标）。 -->
+  <bird-menu role="toolbar" aria-label={t(locale, "birdsMenuLabel")} hidden>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="zoom-in"
+      aria-label={t(locale, "boardZoomIn")}
+      title={t(locale, "boardZoomIn")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="m21 21-4.3-4.3" />
+        <path d="M11 8v6" />
+        <path d="M8 11h6" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="zoom-out"
+      aria-label={t(locale, "boardZoomOut")}
+      title={t(locale, "boardZoomOut")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="m21 21-4.3-4.3" />
+        <path d="M8 11h6" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="rotate-ccw"
+      aria-label={t(locale, "boardRotateCcw")}
+      title={t(locale, "boardRotateCcw")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="rotate-cw"
+      aria-label={t(locale, "boardRotateCw")}
+      title={t(locale, "boardRotateCw")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="mirror"
+      aria-label={t(locale, "boardMirror")}
+      title={t(locale, "boardMirror")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3" />
+        <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3" />
+        <path d="M12 3v3" />
+        <path d="M12 10.5v3" />
+        <path d="M12 18v3" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="front"
+      aria-label={t(locale, "boardBringFront")}
+      title={t(locale, "boardBringFront")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 4h16" />
+        <path d="M12 20V9" />
+        <path d="m7 13 5-5 5 5" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="back"
+      aria-label={t(locale, "boardSendBack")}
+      title={t(locale, "boardSendBack")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 20h16" />
+        <path d="M12 4v11" />
+        <path d="m7 11 5 5 5-5" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="menu-btn"
+      data-op="info"
+      aria-label={t(locale, "birdsInfo")}
+      title={t(locale, "birdsInfo")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="18"
+        height="18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v5" />
+        <path d="M12 8h.01" />
+      </svg>
+    </button>
+  </bird-menu>
+  <!-- 信息小卡片：info 钮唤起，从选中 piece 的 data-* 建档（数据住 DOM）。
+       骨架 SSR 静态渲染、默认 hidden；字段留空由脚本逐行优雅降级。 -->
+  <bird-card
+    role="dialog"
+    aria-label={t(locale, "birdsInfo")}
+    data-source-label={t(locale, "birdsInfoSource")}
+    hidden
+  >
+    <button
+      type="button"
+      class="card-close"
+      aria-label={t(locale, "birdsInfoClose")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="12"
+        height="12"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M6 6l12 12" />
+        <path d="M18 6 6 18" />
+      </svg>
+    </button>
+    <p class="card-name"></p>
+    <p class="card-name-alt"></p>
+    <p class="card-taxa"></p>
+    <p class="card-iucn"></p>
+    <p class="card-sci"></p>
+    <p class="card-source"></p>
+  </bird-card>
+  <!-- 板下提示行：只在客户端激活后出现（bird-board[data-interactive]），内含
+       重置钮与收集计数占位；无 JS 时整行不出现，不承诺不存在的交互。 -->
+  <bird-hint>
+    <button type="button" class="bird-reset">{t(locale, "birdsReset")}</button>
+    <span class="bird-count" data-count>
+      {t(locale, "birdsCount")} {onBoard.length}/{views.length}
+    </span>
+    {t(locale, "birdsHint")}
+  </bird-hint>
+  <!-- 原图预览：双击鸟打开（Task 4 激活）。呈现样式在全局 glass-bubble.css
+       （dialog.bird-preview 与 board-preview 同族）；未 open 时由 dialog UA 规则
+       天然隐藏，不另加 hidden——见 Board.astro 同款注释。 -->
+  <dialog
+    class="bird-preview"
+    aria-label={t(locale, "birdsPreview")}
+    data-bubble-label={t(locale, "birdsBubbleHint")}
+  >
+    <button
+      type="button"
+      class="preview-close"
+      aria-label={t(locale, "birdsPreviewClose")}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path d="M6 6l12 12" />
+        <path d="M18 6 6 18" />
+      </svg>
+    </button>
+  </dialog>
+</bird-board>
+
+<style>
+  bird-board {
+    --menu-r: 74px; /* 径向浮层半径（圆心 = 选中件外上角；JS 靠它算翻转，须用 px） */
+    --menu-btn: 30px; /* 径向浮层按钮直径 */
+    --grid-line: color-mix(in oklab, var(--border) 40%, transparent);
+    display: block;
+    box-sizing: border-box;
+    /* 浮层与信息卡的定位宿主（必须：菜单要溢出 bird-grid 的 overflow:clip） */
+    position: relative;
+    margin-block: var(--space-m) 0;
+  }
+
+  /* 板面：网格画布，承载可拖拽的鸟（样式同 /board 的 board-grid） */
+  bird-grid {
+    display: block;
+    position: relative;
+    /* 独立层叠上下文：「叠到最下」会把 --z 减到负数，若不成上下文，负 z 物件会
+       沉到板面背景之下整枚消失（/board 同款教训） */
+    isolation: isolate;
+    box-sizing: border-box;
+    min-height: clamp(28rem, 66vh, 46rem);
+    padding: var(--space-m);
+    border-radius: var(--radius-md, 0.5rem);
+    background-color: light-dark(
+      #f5f5f4,
+      #26221c
+    ); /* 中性浅灰板面（亮）/ 中性深底（暗），白边贴纸自然有对比 */
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+    overflow: clip;
+  }
+
+  bird-piece {
+    position: absolute;
+    left: calc(var(--x) * 100%);
+    top: calc(var(--y) * 100%);
+    z-index: var(--z, 0);
+    transform: rotate(var(--rot, 0deg)) scale(var(--s, 1)) scaleX(var(--sx, 1));
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+  }
+
+  /* 徽章范式：随形贴纸 + drop-shadow，无齿孔、无邮票框 */
+  .bird-img {
+    display: block;
+    height: var(--bird-h, clamp(6rem, 12vw, 10rem));
+    width: auto;
+    filter: drop-shadow(0 3px 7px rgb(0 0 0 / 0.28));
+  }
+
+  .bird-name {
+    font-size: var(--step--1);
+    line-height: 1.2;
+    color: var(--muted-foreground);
+    text-align: center;
+    /* 默认隐形但保留占位：不改变盒子尺寸，拖拽边界不受影响（同 /board .badge-title） */
+    opacity: 0;
+    transition: opacity 0.15s var(--anatomy-ease, ease);
+  }
+
+  bird-piece:hover .bird-name,
+  bird-piece[data-selected] .bird-name,
+  bird-piece[data-dragging] .bird-name {
+    opacity: 1;
+  }
+
+  /* 外链挂了：图隐藏后不留破图空白，名字常显兜底（Review Focus 第 1 条） */
+  .bird-img[hidden] + .bird-name,
+  .tray-thumb[hidden] + .tray-name {
+    opacity: 1;
+  }
+
+  /* 选中态：虚线描边圈住整只鸟（仅宽屏浮层可产生选中） */
+  bird-piece[data-selected] {
+    outline: 2px dashed var(--accent);
+    outline-offset: 5px;
+  }
+
+  /* 键盘入口：鸟本身可聚焦（Tab 走到 → Enter / 菜单键 唤出浮层） */
+  bird-piece:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 5px;
+  }
+
+  /* 托盘：板下方的水平滚动缩略图带；点击飞入（Task 3 绑事件） */
+  bird-tray {
+    display: flex;
+    gap: var(--space-xs);
+    align-items: flex-end;
+    box-sizing: border-box;
+    margin-top: var(--space-s);
+    padding: var(--space-2xs) var(--space-xs);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .tray-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 0 0 auto;
+    padding: var(--space-3xs);
+    color: var(--muted-foreground);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md, 0.5rem);
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .tray-item:hover {
+    border-color: var(--border);
+    background: color-mix(in oklab, var(--muted) 40%, transparent);
+  }
+
+  .tray-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .tray-thumb {
+    display: block;
+    height: clamp(2.5rem, 5vw, 3.5rem);
+    width: auto;
+    filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.2));
+  }
+
+  .tray-name {
+    max-width: 6.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--step--2, 0.8rem);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .tray-item:hover .tray-name,
+  .tray-item:focus-visible .tray-name {
+    opacity: 1;
+  }
+
+  /* 板下提示行：含重置与计数，只在客户端激活后亮出 */
+  bird-hint {
+    display: none;
+    margin-top: var(--space-2xs);
+    color: var(--muted-foreground);
+    font-size: var(--step--1);
+    text-align: center;
+  }
+
+  bird-board[data-interactive] bird-hint {
+    display: block;
+  }
+
+  .bird-reset {
+    margin-inline: var(--space-3xs);
+    padding: 0.1rem 0.6rem;
+    color: var(--muted-foreground);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: inherit;
+    cursor: pointer;
+  }
+
+  .bird-reset:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .bird-count {
+    margin-inline-end: var(--space-3xs);
+    font-family: var(--font-mono);
+  }
+
+  /* 径向浮层：零尺寸锚点摆在选中鸟外上角，8 枚圆钮沿半圆展开（样式同 /board）。
+     放在 bird-board 下而非 bird-grid 内，否则被板面 overflow:clip 切掉。 */
+  bird-menu {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 30;
+    width: 0;
+    height: 0;
+  }
+
+  bird-menu[hidden] {
+    display: none;
+  }
+
+  bird-menu .menu-btn {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    place-items: center;
+    width: var(--menu-btn);
+    height: var(--menu-btn);
+    color: var(--muted-foreground);
+    background: light-dark(#fff, #2b261f);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.14);
+    cursor: pointer;
+    /* 绕圆心散开：转角度→沿新轴外推半径→反向旋转回水平→自身居中 */
+    transform: rotate(var(--a, 0deg)) translate(var(--menu-r))
+      rotate(calc(-1 * var(--a, 0deg))) translate(-50%, -50%);
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  bird-menu .menu-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: color-mix(
+      in oklab,
+      var(--accent) 12%,
+      light-dark(#fff, #2b261f)
+    );
+  }
+
+  bird-menu .menu-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @keyframes bird-menu-pop {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: rotate(var(--a, 0deg)) translate(var(--menu-r))
+        rotate(calc(-1 * var(--a, 0deg))) translate(-50%, -50%) scale(1);
+    }
+  }
+
+  bird-menu .menu-btn.menu-pop {
+    animation: bird-menu-pop 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--pop-delay, 0ms);
+  }
+
+  /* 信息小卡片：定位宿主同浮层（bird-board 下、bird-grid 外） */
+  bird-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 31;
+    box-sizing: border-box;
+    width: 13rem;
+    padding: var(--space-2xs) calc(var(--space-2xs) + 2px) var(--space-2xs)
+      var(--space-2xs);
+    color: var(--card-foreground, var(--foreground));
+    background: light-dark(#fff, #2b261f);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+    font-size: var(--step--1);
+  }
+
+  bird-card[hidden] {
+    display: none;
+  }
+
+  bird-card .card-name {
+    margin: 0;
+    color: var(--foreground);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  bird-card .card-name-alt,
+  bird-card .card-taxa,
+  bird-card .card-iucn,
+  bird-card .card-sci,
+  bird-card .card-source {
+    margin: var(--space-3xs) 0 0;
+    color: var(--muted-foreground);
+    overflow-wrap: anywhere;
+  }
+
+  bird-card .card-name-alt:empty,
+  bird-card .card-taxa:empty,
+  bird-card .card-iucn:empty,
+  bird-card .card-sci:empty,
+  bird-card .card-source:empty {
+    display: none;
+  }
+
+  /* 源链由脚本动态创建，带不上 Astro scoped 属性，故 :global 放行 */
+  bird-card .card-source :global(a) {
+    color: var(--accent);
+    text-underline-offset: 2px;
+  }
+
+  bird-card .card-close {
+    position: absolute;
+    top: var(--space-3xs);
+    right: var(--space-3xs);
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    color: var(--muted-foreground);
+    background: none;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  bird-card .card-close:hover {
+    color: var(--accent);
+  }
+
+  bird-card .card-close:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* 托盘飞入（Task 3）：同 /board 的 board-toss——从左边板外掠进来、
+     靠惯性冲过静止位、尾段慢速渗回。绝对坐标 + 板面 clip 才有飞入感，
+     窄屏只读网格里不启用。 */
+  @keyframes bird-toss {
+    0% {
+      opacity: 0;
+      transform: translate(-165%, -12%) rotate(calc(var(--rot, 0deg) - 20deg))
+        scale(var(--s, 1)) scaleX(var(--sx, 1));
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    12% {
+      opacity: 1;
+    }
+    82% {
+      transform: translate(3%, 0) rotate(calc(var(--rot, 0deg) + 2deg))
+        scale(var(--s, 1)) scaleX(var(--sx, 1));
+      animation-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(0, 0) rotate(var(--rot, 0deg)) scale(var(--s, 1))
+        scaleX(var(--sx, 1));
+    }
+  }
+
+  @media (width >= 64rem) {
+    bird-piece.bird-enter {
+      animation: bird-toss 0.85s linear both;
+      animation-delay: var(--enter-delay, 0ms);
+    }
+
+    /* 宽屏抓取手感：hover/active 轻微抬起放大（同 /board） */
+    bird-piece {
+      transition:
+        transform 0.15s var(--anatomy-ease, ease),
+        filter 0.15s var(--anatomy-ease, ease);
+      /* 长按归我们自己的浮层，iOS 不再弹「存储图像」气泡 */
+      -webkit-touch-callout: none;
+    }
+
+    bird-piece:hover {
+      transform: rotate(var(--rot, 0deg)) translateY(-2px)
+        scale(calc(var(--s, 1) * 1.03)) scaleX(var(--sx, 1));
+    }
+
+    bird-piece[data-dragging] {
+      transform: rotate(var(--rot, 0deg)) scale(calc(var(--s, 1) * 1.05))
+        scaleX(var(--sx, 1));
+      filter: drop-shadow(0 6px 12px rgb(0 0 0 / 0.28));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    bird-piece.bird-enter,
+    bird-menu .menu-btn.menu-pop {
+      animation: none;
+    }
+
+    bird-piece {
+      transition: none;
+    }
+
+    bird-piece:hover,
+    bird-piece[data-dragging] {
+      transform: rotate(var(--rot, 0deg)) scale(var(--s, 1))
+        scaleX(var(--sx, 1));
+    }
+  }
+
+  /* 窄屏回退：忽略绝对坐标，板与托盘都排成只读网格（5 + 39 = 44 全展示）、
+     名字常显；拖拽/飞入/浮层/卡片/提示行全关 */
+  @media (width < 64rem) {
+    /* 得跟 `bird-board[data-interactive] bird-hint` 同特异度才能赢过它 */
+    bird-board[data-interactive] bird-hint {
+      display: none;
+    }
+    bird-menu {
+      display: none;
+    }
+    bird-card {
+      display: none;
+    }
+    bird-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+      gap: var(--space-m);
+      min-height: 0;
+      place-items: center;
+    }
+
+    bird-piece {
+      position: static;
+      left: auto;
+      top: auto;
+      transform: none;
+      cursor: default;
+      touch-action: auto;
+    }
+
+    .bird-name {
+      opacity: 1;
+    }
+
+    bird-tray {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 7rem), 1fr));
+      gap: var(--space-s) var(--space-xs);
+      overflow-x: visible;
+    }
+
+    .tray-item {
+      cursor: default;
+    }
+
+    .tray-name {
+      opacity: 1;
+      white-space: normal;
+      overflow: visible;
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  import { GLASS_DEFAULTS } from "@/lib/glass-bubble"
+  import { registerGlassBubble } from "@/lib/glass-bubble-element"
+
+  // 双击原图预览动态建 <glass-bubble>，先得有注册；与 /board 共用同一实现
+  //（内部有守卫，两处都加载也只注册一次）
+  registerGlassBubble()
+
+  // 渐进增强：SSR 已是完整可读板；以下仅在宽屏把 bird-board 升级为
+  // 可拖拽、可拿起（径向菜单 + 信息卡）的拼贴板。引擎 fork 自 /board 的
+  // stamp-board 脚本，按其裁剪（无分类标签 / 无 stamp-badge 分支 / 无 dev 编辑条）。
+  if (!customElements.get("bird-board")) {
+    customElements.define(
+      "bird-board",
+      class BirdBoard extends HTMLElement {
+        connectedCallback() {
+          const mq = matchMedia("(width >= 64rem)")
+          const grid = this.querySelector("bird-grid") ?? this
+          let pieces = [...this.querySelectorAll<HTMLElement>("bird-piece")]
+          // 图片默认可被浏览器原生拖拽，会从 pointerdown 手里抢走后续
+          // pointermove（表现为「拖不动」）；在板上统一拦 dragstart 兜住所有子元素。
+          this.addEventListener("dragstart", (e) => e.preventDefault())
+          let topZ = pieces.reduce(
+            (m, p) =>
+              Math.max(m, parseFloat(p.style.getPropertyValue("--z")) || 0),
+            0,
+          )
+          let bottomZ = pieces.reduce(
+            (m, p) =>
+              Math.min(m, parseFloat(p.style.getPropertyValue("--z")) || 0),
+            0,
+          )
+          const menu = this.querySelector<HTMLElement>("bird-menu")
+          const menuBtns = menu
+            ? [...menu.querySelectorAll<HTMLButtonElement>(".menu-btn")]
+            : []
+          const card = this.querySelector<HTMLElement>("bird-card")
+          let tool = "drag"
+          let selected: HTMLElement | null = null
+          // 客户端已激活：板下提示行这才亮出来（无 JS 时不承诺不存在的交互）
+          this.dataset.interactive = ""
+
+          let active: HTMLElement | null = null
+          let rect: DOMRect | null = null
+          let startX = 0
+          let startY = 0
+          let baseX = 0
+          let baseY = 0
+          let pw = 0
+          let ph = 0
+          let dragged = false
+          let justDragged = false
+          const THRESHOLD = 4
+
+          const num = (p: HTMLElement, name: string) =>
+            parseFloat(p.style.getPropertyValue(name)) || 0
+          const clamp = (v: number, lo: number, hi: number) =>
+            Math.min(Math.max(v, lo), hi)
+          const scaleOf = (p: HTMLElement) => {
+            const s = num(p, "--s")
+            return s > 0 ? s : 1
+          }
+
+          // 同一时刻只有一只鸟被“拿起”（选中 + 浮层展开）
+          const select = (p: HTMLElement) => {
+            if (selected && selected !== p) delete selected.dataset.selected
+            selected = p
+            p.dataset.selected = ""
+          }
+          const deselect = () => {
+            if (selected) delete selected.dataset.selected
+            selected = null
+          }
+
+          // 工具态只剩内部语义：drag = 可拖；pointer = 已拿起物件
+          const setTool = (next: "drag" | "pointer") => {
+            tool = next
+            this.dataset.tool = next
+            if (next === "drag") deselect()
+          }
+
+          // 操作：只写内存 CSS 变量（与拖拽同款惯例，刷新回默认）
+          const ops: Record<string, (p: HTMLElement) => void> = {
+            "zoom-in": (p) =>
+              p.style.setProperty(
+                "--s",
+                String(clamp(scaleOf(p) * 1.25, 0.5, 2.5)),
+              ),
+            "zoom-out": (p) =>
+              p.style.setProperty(
+                "--s",
+                String(clamp(scaleOf(p) / 1.25, 0.5, 2.5)),
+              ),
+            "rotate-ccw": (p) =>
+              p.style.setProperty("--rot", `${num(p, "--rot") - 15}deg`),
+            "rotate-cw": (p) =>
+              p.style.setProperty("--rot", `${num(p, "--rot") + 15}deg`),
+            mirror: (p) =>
+              p.style.setProperty("--sx", num(p, "--sx") === -1 ? "1" : "-1"),
+            front: (p) => {
+              topZ += 1
+              p.style.setProperty("--z", String(topZ))
+            },
+            back: (p) => {
+              bottomZ -= 1
+              p.style.setProperty("--z", String(bottomZ))
+            },
+          }
+          for (const b of menuBtns) {
+            b.addEventListener("click", () => {
+              if (!selected) return
+              if (b.getAttribute("data-op") === "info") {
+                toggleCard()
+                return
+              }
+              ops[b.getAttribute("data-op") ?? ""]?.(selected)
+              // 缩放/旋转会改外廓，浮层跟着重新贴合
+              settleMenu()
+            })
+          }
+
+          // 信息小卡片：info 钮切换显示选中鸟的建档。数据全住在 piece 的
+          // data-* 上（SSR 写入），脚本里不另养一份；空字段逐行优雅降级，
+          // 绝不写 "undefined"。
+          const infoOf = (p: HTMLElement) => ({
+            name: p.dataset.name ?? "",
+            nameAlt: p.dataset.nameAlt ?? "",
+            order: p.dataset.order ?? "",
+            family: p.dataset.family ?? "",
+            familyLatin: p.dataset.familyLatin ?? "",
+            sci: p.dataset.sci ?? "",
+            pinyin: p.dataset.pinyin ?? "",
+            iucn: p.dataset.iucn ?? "",
+            url: p.dataset.url ?? "",
+          })
+          const setText = (sel: string, text: string) => {
+            const el = card?.querySelector(sel)
+            if (el) el.textContent = text
+          }
+          const fillCard = (p: HTMLElement) => {
+            if (!card) return
+            const info = infoOf(p)
+            setText(".card-name", info.name)
+            setText(".card-name-alt", info.nameAlt)
+            // 「目 · 科（拉丁）」：任一段缺失则跳过相应连接符
+            const taxa = [info.order, info.family].filter(Boolean).join(" · ")
+            setText(".card-taxa", taxa ? `${taxa}（${info.familyLatin}）` : "")
+            setText(".card-iucn", info.iucn ? `IUCN ${info.iucn}` : "")
+            setText(
+              ".card-sci",
+              [info.sci, info.pinyin].filter(Boolean).join(" · "),
+            )
+            const srcEl = card.querySelector(".card-source")
+            if (!srcEl) return
+            srcEl.textContent = ""
+            if (info.url) {
+              const label = card.getAttribute("data-source-label") ?? ""
+              const link = document.createElement("a")
+              link.href = info.url
+              link.target = "_blank"
+              link.rel = "noopener noreferrer"
+              link.textContent = info.url.replace(/^https?:\/\//, "")
+              srcEl.textContent = `${label} `
+              srcEl.append(link)
+            }
+          }
+          // 卡片摆在选中鸟正下方（翻边时贴左缘），左右夹进板内；
+          // 下方放不下就翻到鸟上方（算法同 /board）
+          const placeCard = (p: HTMLElement) => {
+            if (!card) return
+            const sb = this.getBoundingClientRect()
+            const gr = grid.getBoundingClientRect()
+            const pr = p.getBoundingClientRect()
+            const cw = card.offsetWidth || 208
+            const ch = card.offsetHeight || 96
+            const gap = 10
+            const flip = pr.right + cw > gr.right && pr.left - cw > gr.left
+            let left = flip ? pr.left - cw : pr.right - cw
+            left = Math.min(Math.max(left, gr.left + 4), gr.right - cw - 4)
+            let top = pr.bottom + gap
+            if (top + ch > gr.bottom - 4) top = pr.top - gap - ch
+            top = Math.min(Math.max(top, gr.top + 4), gr.bottom - ch - 4)
+            card.style.left = `${Math.round(left - sb.left)}px`
+            card.style.top = `${Math.round(top - sb.top)}px`
+          }
+          const showCard = (p: HTMLElement) => {
+            if (!card) return
+            // 先显形再测量：hidden 下 offsetWidth/Height 全 0，placeCard 会错拿
+            // 回退值；同一帧内填完内容才定位，不会闪出旧文案
+            card.hidden = false
+            fillCard(p)
+            placeCard(p)
+          }
+          const closeCard = () => {
+            if (!card || card.hidden) return
+            const back = card.contains(document.activeElement) ? selected : null
+            card.hidden = true
+            back?.focus({ preventScroll: true })
+          }
+          const toggleCard = () => {
+            if (!card || !selected) return
+            if (card.hidden) showCard(selected)
+            else closeCard()
+          }
+
+          // 浮层定位：圆心贴在选中鸟的外上角，右半圆放不下就换左半圆；
+          // 竖向把圆心夹在板内，免得贴边的鸟把上半排按钮顶到板外去
+          const placeMenu = (p: HTMLElement) => {
+            if (!menu) return
+            const sb = this.getBoundingClientRect()
+            const gr = grid.getBoundingClientRect()
+            const pr = p.getBoundingClientRect()
+            const r =
+              parseFloat(getComputedStyle(this).getPropertyValue("--menu-r")) ||
+              74
+            const half = (menuBtns[0]?.offsetWidth || 30) / 2
+            const roomR = gr.right - pr.right
+            const roomL = pr.left - gr.left
+            const flip = pr.right + r + half > gr.right && roomL > roomR
+            const top = pr.top - sb.top
+            const lo = gr.top + r + half - sb.top
+            const hi = gr.bottom - r - half - sb.top
+            menu.style.left = `${Math.round((flip ? pr.left : pr.right) - sb.left)}px`
+            menu.style.top = `${Math.round(Math.min(Math.max(top, lo), hi))}px`
+            const n = Math.max(menuBtns.length - 1, 1)
+            menuBtns.forEach((b, i) => {
+              const a = -90 + (i * 180) / n
+              b.style.setProperty("--a", `${flip ? 180 - a : a}deg`)
+            })
+          }
+          const openMenu = (p: HTMLElement) => {
+            if (!menu || !menuBtns.length) return
+            placeMenu(p)
+            menuBtns.forEach((b, i) => {
+              b.classList.remove("menu-pop")
+              b.style.setProperty("--pop-delay", `${i * 22}ms`)
+              b.tabIndex = i === 0 ? 0 : -1 // toolbar 用 roving tabindex
+              void b.offsetWidth // 强制回流，重启动画
+              b.classList.add("menu-pop")
+            })
+            menu.hidden = false
+            // 焦点送进浮层：Esc 能退、方向键能走，键盘与触屏同样可操作
+            menuBtns[0]?.focus({ preventScroll: true })
+          }
+          const closeMenu = () => {
+            if (!menu || menu.hidden) return
+            // 焦点在浮层里时，收前先还给被拿起的鸟（标准“焦点回宿主”）
+            const back = menu.contains(document.activeElement) ? selected : null
+            menu.hidden = true
+            for (const b of menuBtns) b.classList.remove("menu-pop")
+            back?.focus({ preventScroll: true })
+          }
+          // 操作后外廓还在 0.15s 过渡里变化（缩放/旋转都移动角点），
+          // 追几帧把浮层贴回新的角点；窗口过后自动停，不常驻 rAF
+          let menuRaf = 0
+          const settleMenu = () => {
+            if (!menu || menu.hidden || !selected) return
+            const until = performance.now() + 300
+            cancelAnimationFrame(menuRaf)
+            const step = () => {
+              if (!selected || menu.hidden) {
+                menuRaf = 0
+                return
+              }
+              placeMenu(selected)
+              menuRaf =
+                performance.now() < until ? requestAnimationFrame(step) : 0
+            }
+            menuRaf = requestAnimationFrame(step)
+          }
+          // 放下鸟：收浮层与卡片、清选中、回到拖拽态
+          const exitPicked = () => {
+            closeCard()
+            closeMenu()
+            setTool("drag")
+          }
+          // 拿起一只：切工具态、选中、在外上角展开浮层（三条入口共用）。
+          // 卡片不隔次拿起残留：先把上一张收掉
+          const pick = (p: HTMLElement) => {
+            closeCard()
+            setTool("pointer")
+            select(p)
+            openMenu(p)
+          }
+
+          // 拿起后的一切退出：点板面空白收浮层回拖拽
+          grid.addEventListener("pointerdown", (e) => {
+            if (tool !== "pointer") return
+            if ((e.target as HTMLElement).closest?.("bird-piece")) return
+            exitPicked()
+          })
+
+          // 唤起浮层的三条入口：鼠标右键、触屏长按（见 pressTimer）、键盘
+          // （Tab 到鸟按 Enter / 空格 / 菜单键 / Shift+F10）。板面空白处不拦原生菜单。
+          let pointerType = "mouse"
+          this.addEventListener(
+            "pointerdown",
+            (e) => {
+              pointerType = (e as PointerEvent).pointerType || "mouse"
+            },
+            true,
+          )
+          grid.addEventListener("contextmenu", (e) => {
+            if (!mq.matches) return
+            const piece = (e.target as HTMLElement).closest<HTMLElement>(
+              "bird-piece",
+            )
+            if (pointerType !== "mouse") {
+              // 触屏 / 笔：长按由 pressTimer 接管，这里只拦掉原生菜单避免双开
+              if (piece) e.preventDefault()
+              return
+            }
+            if (!piece) {
+              if (menu && !menu.hidden) exitPicked()
+              return
+            }
+            e.preventDefault()
+            pick(piece)
+          })
+          this.addEventListener("keydown", (e) => {
+            if (!mq.matches) return
+            if (e.key === "Escape") {
+              // 卡片开着时 Esc 先关卡片、浮层保留；再按才放下鸟
+              if (card && !card.hidden) {
+                closeCard()
+                return
+              }
+              if (menu && !menu.hidden) exitPicked()
+              return
+            }
+            const t = e.target as HTMLElement | null
+            if (!t?.matches?.("bird-piece")) return
+            if (
+              e.key !== "Enter" &&
+              e.key !== " " &&
+              e.key !== "ContextMenu" &&
+              !(e.shiftKey && e.key === "F10")
+            )
+              return
+            e.preventDefault() // 空格不滚页
+            pick(t)
+          })
+          // 浮层内方向键走位（role="toolbar" + roving tabindex）
+          menu?.addEventListener("keydown", (e) => {
+            const back = e.key === "ArrowLeft" || e.key === "ArrowUp"
+            if (
+              e.key !== "ArrowLeft" &&
+              e.key !== "ArrowUp" &&
+              e.key !== "ArrowRight" &&
+              e.key !== "ArrowDown"
+            )
+              return
+            const i = menuBtns.indexOf(e.target as HTMLButtonElement)
+            if (i < 0) return
+            e.preventDefault()
+            const next =
+              menuBtns[
+                (i + (back ? -1 : 1) + menuBtns.length) % menuBtns.length
+              ]
+            for (const b of menuBtns) b.tabIndex = -1
+            next.tabIndex = 0
+            next.focus()
+          })
+
+          // 卡片内关闭钮；源链是 bird-card 的直接内容，不在任何拦截范围内
+          card?.addEventListener("click", (e) => {
+            if ((e.target as HTMLElement).closest(".card-close")) closeCard()
+          })
+
+          // 触屏 / 笔长按 500ms = 右键的等价操作（浮层取代原生菜单）；
+          // 手指一旦越过拖拽阈值就拆 Timer，“拖”与“长按”不互相抢
+          let pressTimer: ReturnType<typeof setTimeout> | undefined
+          let longPressed = false
+          const clearPress = () => {
+            if (pressTimer !== undefined) clearTimeout(pressTimer)
+            pressTimer = undefined
+          }
+
+          const onMove = (e: PointerEvent) => {
+            if (!active || !rect || longPressed) return
+            const dx = e.clientX - startX
+            const dy = e.clientY - startY
+            if (!dragged && Math.hypot(dx, dy) > THRESHOLD) {
+              dragged = true
+              clearPress()
+            }
+            if (!dragged) return
+            e.preventDefault()
+            active.dataset.dragging = ""
+            const maxX = Math.max(0, 1 - pw / rect.width)
+            const maxY = Math.max(0, 1 - ph / rect.height)
+            const nx = Math.min(Math.max(baseX + dx / rect.width, 0), maxX)
+            const ny = Math.min(Math.max(baseY + dy / rect.height, 0), maxY)
+            active.style.setProperty("--x", String(nx))
+            active.style.setProperty("--y", String(ny))
+          }
+
+          const onUp = (e: PointerEvent) => {
+            const piece = active
+            if (!piece) return
+            clearPress()
+            try {
+              piece.releasePointerCapture?.(e.pointerId)
+            } catch {}
+            piece.removeEventListener("pointermove", onMove)
+            piece.removeEventListener("pointerup", onUp)
+            piece.removeEventListener("pointercancel", onUp)
+            delete piece.dataset.dragging
+            if (dragged || longPressed) {
+              justDragged = true
+              // 拖拽 / 长按后抑制紧随其后的 click
+              piece.addEventListener(
+                "click",
+                (ev) => (justDragged ? ev.preventDefault() : undefined),
+                { capture: true, once: true },
+              )
+            }
+            longPressed = false
+            active = null
+            rect = null
+          }
+
+          // 原图预览：双击一只鸟，把它的 hotlink 原图搬进 dialog 里的玻璃泡
+          // （呈现样式住全局 glass-bubble.css 的 dialog.bird-preview 同族规则）。
+          // 双击的是整只 piece，没有链接可抢跳（与 /board 徽章不绑的理由不同）。
+          const dlg = this.querySelector<HTMLDialogElement>(
+            "dialog.bird-preview",
+          )
+          const openPreview = (p: HTMLElement) => {
+            const img = p.querySelector<HTMLImageElement>(".bird-img")
+            if (!dlg || !img?.src) return
+            exitPicked()
+            // 泡的画布逻辑尺寸 620，宿主 CSS 盒 min(100%, 620px)；按视口取整，
+            // 手机上不为预览备一块超出显示尺寸的大画布
+            const box = Math.min(innerWidth - 48, innerHeight - 96, 620)
+            let bubble: HTMLElement | null = null
+            dlg.querySelector("glass-bubble")?.remove()
+            if (box >= 280) {
+              bubble = document.createElement("glass-bubble")
+              bubble.dataset.src = img.src
+              bubble.dataset.size = String(
+                Math.round(clamp(box * 0.29, 100, 280)),
+              )
+              bubble.dataset.label =
+                dlg.dataset.bubbleLabel ?? GLASS_DEFAULTS.label
+            }
+            // 静态降级图挂进泡内部，让组件自带的 glass-bubble[data-active] > img
+            // 规则在有 WebGL 时藏掉它、无 WebGL 时才露出（动态建泡绕过了 SSR 图）
+            const still = document.createElement("img")
+            // hotlink 跨域图：上传 WebGL 纹理前须以 CORS 干净模式取图（raw 域发
+            // Access-Control-Allow-Origin: *），否则 canvas 被污染、texImage2D 抛 SecurityError
+            still.crossOrigin = "anonymous"
+            still.src = img.src
+            still.alt = p.getAttribute("aria-label") ?? ""
+            still.decoding = "async"
+            // 降级路径（box<280 或无 WebGL）时裸图直接进 dialog：限宽防溢出，
+            // 有泡时该图本就被 glass-bubble[data-active] > img 藏掉，不影响
+            still.style.maxWidth = "100%"
+            still.style.height = "auto"
+            const closeBtn = [...dlg.children]
+            if (bubble) {
+              bubble.append(still)
+              dlg.replaceChildren(bubble, ...closeBtn)
+            } else {
+              dlg.replaceChildren(still, ...closeBtn)
+            }
+            // 双保险：隐掉 hidden（reset.css 的 [hidden] 规则会压过 dialog
+            // 的 UA 显示），再走原生 modal
+            dlg.hidden = false
+            if (!dlg.open) dlg.showModal()
+          }
+          const closePreview = () => {
+            if (!dlg?.open) return
+            dlg.close()
+            // 摘掉泡：disconnect 触发组件的 destroy，释放 WebGL 上下文
+            dlg.querySelector("glass-bubble")?.remove()
+          }
+          dlg?.addEventListener("click", (e) => {
+            if ((e.target as HTMLElement).closest(".preview-close")) {
+              closePreview()
+              return
+            }
+            // 点图区以外的背景（含 ::backdrop 的点击）也收
+            if (e.target === dlg) closePreview()
+          })
+          // 关后把焦点还给唤起的那只鸟：标准“焦点回宿主”，不留在 body 上
+          let previewPiece: HTMLElement | null = null
+          dlg?.addEventListener("close", () => {
+            previewPiece?.focus({ preventScroll: true })
+            previewPiece = null
+          })
+
+          const onDown = (e: PointerEvent) => {
+            const piece = e.currentTarget as HTMLElement
+            if (e.button !== 0 && e.pointerType === "mouse") return
+            if (tool === "pointer") {
+              select(piece)
+              // 浮层开着时改选另一只：浮层跟着换锚点；卡片不隔物件残留
+              if (menu && !menu.hidden) {
+                closeCard()
+                openMenu(piece)
+              }
+              return
+            }
+            active = piece
+            rect = grid.getBoundingClientRect()
+            startX = e.clientX
+            startY = e.clientY
+            baseX = num(piece, "--x")
+            baseY = num(piece, "--y")
+            pw = piece.offsetWidth
+            ph = piece.offsetHeight
+            dragged = false
+            justDragged = false
+            longPressed = false
+            topZ += 1
+            piece.style.setProperty("--z", String(topZ))
+            // 指针可能已失效（快速抬起、自动化合成事件），capture 抛错不该
+            // 把整次拖拽与长按一起带崩
+            try {
+              piece.setPointerCapture(e.pointerId)
+            } catch {}
+            piece.addEventListener("pointermove", onMove)
+            piece.addEventListener("pointerup", onUp)
+            piece.addEventListener("pointercancel", onUp)
+            if (e.pointerType !== "mouse") {
+              clearPress()
+              pressTimer = setTimeout(() => {
+                pressTimer = undefined
+                longPressed = true
+                pick(piece) // 拖拽已因 longPressed 而在 onMove 里失效
+              }, 500)
+            }
+          }
+
+          // 双击预览用事件委托挂在 grid 上只绑一次：断点来回切换、动态加/删件
+          // 都不会累加监听器（piece 级 addEventListener 在 enable 重跑时会叠加）
+          //（窄屏只读网格不给停靠点：enable 里 tabIndex 按断点 0/-1 切换）
+          grid?.addEventListener("dblclick", (e) => {
+            if (!mq.matches) return
+            const piece = (e.target as HTMLElement).closest<HTMLElement>(
+              "bird-piece",
+            )
+            if (!piece) return
+            previewPiece = piece
+            openPreview(piece)
+          })
+
+          const enable = (on: boolean) =>
+            pieces.forEach((p) => {
+              p.tabIndex = on ? 0 : -1
+              if (on) {
+                p.addEventListener("pointerdown", onDown)
+              } else {
+                p.removeEventListener("pointerdown", onDown)
+              }
+            })
+
+          mq.addEventListener("change", () => {
+            closeCard()
+            closeMenu()
+            enable(mq.matches)
+          })
+          // 窗口尺寸一变，板面与鸟的几何全部重排，浮层锚点作废
+          window.addEventListener("resize", () => {
+            closeCard()
+            closeMenu()
+          })
+          enable(mq.matches)
+
+          // ---- 托盘点击飞入 + 重置 + 收集计数 ----
+          // 数据住在 tray 按钮的 data-* 上，飞入即照抄成新 piece；不持久化，
+          // 刷新回默认 5 只（与 /board 同哲学）。窄屏只读：门槛内才绑。
+          const tray = this.querySelector("bird-tray")
+          const countEl = this.querySelector<HTMLElement>(".bird-count")
+          const resetBtn = this.querySelector<HTMLButtonElement>(".bird-reset")
+          const reduce = matchMedia("(prefers-reduced-motion: reduce)")
+          // 默认件的 SSR 初始几何快照（重置时逐件回位）
+          const initGeom = new Map<HTMLElement, string>()
+          for (const p of pieces)
+            initGeom.set(
+              p,
+              [
+                p.style.getPropertyValue("--x"),
+                p.style.getPropertyValue("--y"),
+                p.style.getPropertyValue("--rot"),
+                p.style.getPropertyValue("--z"),
+              ].join("|"),
+            )
+          // SSR 托盘按钮原序登记（飞入时从托盘移除，重置时按序补回）
+          const trayOrder = tray
+            ? [...tray.querySelectorAll<HTMLElement>(".tray-item")]
+            : []
+          // Astro scoped 样式带 [data-astro-cid-*] 属性选择器：动态建的 piece 及其
+          // 子元素必须克隆默认件的 cid 属性，否则 .bird-img 尺寸/飞入关键帧全部选不中
+          const scopeAttrs = pieces[0]
+            ? [...pieces[0].attributes]
+                .map((a) => a.name)
+                .filter((n) => n.startsWith("data-astro-cid"))
+            : []
+          const applyScope = (el: Element) => {
+            for (const src of [el, ...el.querySelectorAll("*")]) {
+              for (const name of scopeAttrs) {
+                src.setAttribute(name, pieces[0].getAttribute(name) ?? "")
+              }
+            }
+          }
+
+          // 全站总数 = 默认件 + 托盘件（挂载时一次性快照，不随 DOM 变化重算）
+          const totalCount =
+            pieces.length + (tray?.querySelectorAll(".tray-item").length ?? 0)
+
+          const updateCount = () => {
+            if (!countEl || !grid) return
+            // 标签 = 首个数字前的全部文案（zh「已上板」/ en「On board」都是多词），
+            // 切词会截断 en 标签，故按数字位置切
+            const txt = countEl.textContent?.trim() ?? ""
+            const cut = txt.search(/\d/)
+            const label = (cut > 0 ? txt.slice(0, cut) : txt).trim()
+            const n = grid.querySelectorAll("bird-piece").length
+            countEl.textContent = `${label} ${n}/${totalCount}`
+          }
+
+          const addBird = (btn: HTMLElement) => {
+            if (!grid || btn.hasAttribute("disabled")) return
+            const d = btn.dataset
+            const piece = document.createElement("bird-piece")
+            piece.dataset.id = d.id ?? ""
+            piece.dataset.name = d.name ?? ""
+            piece.dataset.nameAlt = d.nameAlt ?? ""
+            piece.dataset.order = d.order ?? ""
+            piece.dataset.family = d.family ?? ""
+            piece.dataset.familyLatin = d.familyLatin ?? ""
+            piece.dataset.sci = d.sci ?? ""
+            piece.dataset.pinyin = d.pinyin ?? ""
+            piece.dataset.iucn = d.iucn ?? ""
+            piece.dataset.url = d.url ?? ""
+            piece.dataset.added = ""
+            piece.setAttribute("role", "group")
+            piece.setAttribute("aria-label", d.name ?? "")
+            piece.style.setProperty("--s", "1")
+            piece.style.setProperty("--sx", "1")
+            const img = document.createElement("img")
+            img.className = "bird-img"
+            img.src = d.url ?? ""
+            img.alt = d.name ?? ""
+            img.loading = "lazy"
+            img.decoding = "async"
+            img.addEventListener(
+              "error",
+              () => {
+                img.hidden = true
+              },
+              { once: true },
+            )
+            const name = document.createElement("span")
+            name.className = "bird-name"
+            name.textContent = d.name ?? ""
+            piece.append(img, name)
+            applyScope(piece)
+            grid.append(piece)
+            // 随机落位：先 append 后测量（未定位时 transform 不含位移），
+            // 四边各留 4% 余量，免正中叠罗汉
+            const gw = grid.clientWidth || 1
+            const gh = grid.clientHeight || 1
+            const rr = piece.getBoundingClientRect()
+            const maxX = Math.max(0.04, 1 - 0.04 - rr.width / gw)
+            const maxY = Math.max(0.04, 1 - 0.04 - rr.height / gh)
+            piece.style.setProperty(
+              "--x",
+              String(0.04 + Math.random() * (maxX - 0.04)),
+            )
+            piece.style.setProperty(
+              "--y",
+              String(0.04 + Math.random() * (maxY - 0.04)),
+            )
+            piece.style.setProperty(
+              "--rot",
+              `${Math.round((Math.random() * 12 - 6) * 10) / 10}deg`,
+            )
+            topZ += 1
+            piece.style.setProperty("--z", String(topZ))
+            // 与默认 piece 同权：可拖、可聚焦、可唤菜单
+            pieces.push(piece)
+            if (mq.matches) {
+              piece.tabIndex = 0
+              piece.addEventListener("pointerdown", onDown)
+            } else {
+              piece.tabIndex = -1
+            }
+            // 飞入：reduced-motion 直接落位不动画；animationend/cancel 摘类保持 DOM 干净
+            if (!reduce.matches) {
+              piece.addEventListener(
+                "animationend",
+                () => {
+                  piece.classList.remove("bird-enter")
+                  piece.style.removeProperty("--enter-delay")
+                },
+                { once: true },
+              )
+              piece.addEventListener("animationcancel", () => {
+                piece.classList.remove("bird-enter")
+              })
+              piece.style.setProperty("--enter-delay", "0ms")
+              piece.classList.add("bird-enter")
+            }
+            btn.remove() // 从托盘消失；重置时按 trayBtns 登记的原序归位
+            updateCount()
+          }
+
+          const resetBoard = () => {
+            // 移除后加的鸟
+            for (const p of [
+              ...(grid?.querySelectorAll("bird-piece[data-added]") ?? []),
+            ])
+              p.remove()
+            pieces = pieces.filter((p) => !p.hasAttribute("data-added"))
+            // 默认件回 SSR 初始几何
+            for (const p of pieces) {
+              const g0 = initGeom.get(p)
+              if (!g0) continue
+              const [x, y, rot, z] = g0.split("|")
+              p.style.setProperty("--x", x)
+              p.style.setProperty("--y", y)
+              p.style.setProperty("--rot", rot)
+              p.style.setProperty("--z", z)
+              p.style.setProperty("--s", "1")
+              p.style.setProperty("--sx", "1")
+            }
+            topZ = pieces.reduce(
+              (m, p) =>
+                Math.max(m, parseFloat(p.style.getPropertyValue("--z")) || 0),
+              0,
+            )
+            bottomZ = pieces.reduce(
+              (m, p) =>
+                Math.min(m, parseFloat(p.style.getPropertyValue("--z")) || 0),
+              0,
+            )
+            // 托盘满员：按 SSR 原序把缺席的按钮依序补回末尾（未点过的仍在位，
+            // 点过的按原序追加，整体相对顺序与初始一致）
+            for (const b of trayOrder) {
+              if (tray && !tray.contains(b)) tray.append(b)
+            }
+            exitPicked()
+            updateCount()
+          }
+
+          tray?.addEventListener("click", (e) => {
+            const btn = (e.target as HTMLElement).closest<HTMLElement>(
+              ".tray-item",
+            )
+            if (!btn || !mq.matches) return // 窄屏只读，不加鸟
+            addBird(btn)
+          })
+          resetBtn?.addEventListener("click", resetBoard)
+          updateCount()
+        }
+      },
+    )
+  }
+</script>

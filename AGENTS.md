@@ -195,12 +195,14 @@ Composer，生产构建零痕迹）：点击实时检测译文状态——无译
 
 ### dev 收藏板布局编辑器
 
-`astro dev` 下 `/board` 板下有「保存布局」浮条（模式同 Moment Composer，生产
+`astro dev` 下 `/board/stamps` 板下有「保存布局」浮条（模式同 Moment Composer，生产
  HTML 无 markup、无端点）：宽屏里拖拽/缩放/旋转/镜像/叠放后点击，浮条采集各
  `board-piece[data-id]` 的几何 `POST /api/board/layout`，由 `patchBoardSource` 按 `id`
  逐字段改写 `src/data/board.ts`（保留注释与非几何字段，默认值不落字段，同值不重写）。
 写入目标默认 `src/data/board.ts`，可用 `BOARD_LAYOUT_SOURCE` 覆盖（测试隔离用）。
-详见 [docs/components/board.md](docs/components/board.md) §9。回归：
+详见 [docs/components/board.md](docs/components/board.md) §9。`/board` 本身是「玩具柜」
+列表页（只给入口，展品在其子页 `/board/<slug>`，登记在 `src/data/board-sections.ts`；
+结构与窄屏语义见 [docs/components/board-index.md](docs/components/board-index.md)）。回归：
 `bash scripts/tests/board-source-patch-check.sh`（离线）与 `bash scripts/tests/board-layout-check.sh`（起停 dev server）。
 
 ## 测试与验证指南
@@ -211,6 +213,13 @@ Composer，生产构建零痕迹）：点击实时检测译文状态——无译
 `bun run format:check` 和 `bun run build`。
 若只使用 npm 工作流，对应命令为 `npm run format:check` 和 `npm run build`。
 涉及可视样式、排版或路由变化时，请在本地开发服务器中手动检查相关页面。
+
+`biome.json` 的 `files.includes` 排除了 `.agents/skills/anatomy/**` 与
+`.agents/skills/hairline-create/**`：那是 vendored 技能产物（约 12 MB 生成 HTML 与
+别人的脚本），不是本项目源码。格式化它们只会在每次技能更新时灌进数千行无意义 diff
+（实测 hairline-create 一个目录就 3930 行），而 `npm run format` 会顺手改写这 120 个
+文件。排除后 `format:check` 只反映项目代码，别把这两条当冗余删掉。（`biome.json` 不
+接受注释，理由只能写在这里。）
 
 部署脚本另有干跑校验：`bash scripts/tests/deploy-check.sh` —— 在 `/tmp` 临时 bare 仓库上覆盖全流程与错误路径（不触碰真实 Pages 仓库；测试期间临时使用受控 `.env`，退出时恢复原文件），运行前需已安装依赖。
 
@@ -285,3 +294,10 @@ The five canonical triage labels are used: `needs-triage`, `needs-info`, `ready-
 ### Domain docs
 
 Single-context layout. See `docs/agents/domain.md`.
+
+## Project memory
+
+本 repo 自带可移植记忆（跨 harness）。开局读 `docs/memory/MEMORY.md`（注入层索引，
+保持短）。学到耐久、显著的要点（决策/坑/已验证规则/偏好）就写一条
+`docs/memory/notes/YYYY-MM-DD-<slug>.md`（蒸馏，非复制）。要整理/纠错/提升记忆，
+照 `docs/memory/DREAM.md` 跑（可手动，也可由定时任务触发）。

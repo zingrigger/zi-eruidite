@@ -172,13 +172,13 @@ const moments = SITE.momentsOnHome
     margin-inline: auto;
   }
 
-  /* 内容区留白：文字/卡片从竖线内侧退让，不贴参考线（仅 topbar，无背景） */
-  :root[data-layout="topbar"] hero-card,
-  :root[data-layout="topbar"] latest-section {
-    padding-inline: var(--space-m);
-  }
-
   @media (width >= 64rem) {
+    /* 内容区留白：文字/卡片从竖线内侧退让，不贴参考线（仅 topbar，无背景） */
+    :root[data-layout="topbar"] hero-card,
+    :root[data-layout="topbar"] latest-section {
+      padding-inline: var(--space-m);
+    }
+
     /* 宽屏 topbar：hero 换「文字左 / 图形右」双栏页头，底边光学对齐，
        与 ListingHead 的图文语言一致；窄屏不命中，保留居中堆叠回退 */
     :root[data-layout="topbar"] hero-card {
@@ -220,8 +220,11 @@ const moments = SITE.momentsOnHome
 
 <style is:global>
   /* 页脚与上方内容块同样从竖线内侧退让：page-footer 归 Layout.astro 所有，
-     scoped 样式无法命中，故用 global；本块仅随首页产出，不影响其它 topbar 页面 */
-  :root[data-layout="topbar"] page-footer {
-    padding-inline: var(--space-m);
+     scoped 样式无法命中，故用 global；本块仅随首页产出，不影响其它 topbar 页面。
+     <64rem 时 hero/列表已回到内容列边缘，页脚也一起归零。 */
+  @media (width >= 64rem) {
+    :root[data-layout="topbar"] page-footer {
+      padding-inline: var(--space-m);
+    }
   }
 </style>

@@ -38,10 +38,20 @@
 - [AnatomyFigure 等距机器组件](anatomy-figure.md) —— 把抽象概念画成一台可交互小机器
   （构建期出全图 SVG + 客户端只做动画）。
 - [Board 收藏板组件](board.md) —— 可拖拽的邮票与徽章拼贴板（SSR 铺默认位 + Pointer
-  Events 客户端激活，窄屏回退只读网格）。
+  Events 客户端激活，窄屏回退只读网格）；住在 `/board/stamps`。
+- [BoardIndex 玩具柜列表与展品子页](board-index.md) —— `/board` 列表页 + 四个
+  `/board/<slug>` 子页（一份 `BOARD_SECTIONS` 登记驱动中英路由、crumbs、语言切换器
+  与窄屏语义；加第五件只碰数据与组件）。
 - [GlassBubble 玻璃泡组件](glass-bubble.md) —— 一颗可拖过照片的玻璃泡，边缘折射 +
   色散 + 高光（从 Bencho 的 React WebGL 着色器组件移植为原生自主定制元素）。
 - [ScrambleText 解码文字组件](scramble-text.md) —— 一行乱码从左到右逐字锁回真文本
   （从一段 React hook 改写为原生自主定制元素，SSR 出的就是最终文本）。
 - [LenticularCard 光栅卡组件](lenticular-card.md) —— 把它倾到位就换成另一张画面的数字
   光栅卡（手写弹簧 + CSS mask 扫掠，倾斜与切换同一个量驱动，零依赖）。
+- [TicketCard 票券组件](ticket-card.md) —— 一组被收藏的票券（礼品券/折扣券/电子门票，
+  横竖蓝白多变体），板下静态拼贴，齿孔/撕口/条形码/点阵码全构建期生成，无 JS。
+- [BirdBoard 鸟类收藏板组件](bird-board.md) —— 44 目各一只的鸟贴纸拼贴板（SSR 摆
+  默认 5 只 + 托盘点击飞入收集，拖拽/径向菜单/信息卡/玻璃泡预览，hotlink 外链，
+  不持久化；住在 `/board/birds`）。
+- [TagMosaic 标签瓷砖图组件](tag-mosaic.md) —— 按引用次数铺开的加权 Voronoi
+  瓷砖拼贴（构建期 power diagram + clip-path 多边形，纯 CSS 开关，无客户端 JS）。

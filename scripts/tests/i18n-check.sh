@@ -191,3 +191,10 @@ assert_dir_lacks dist 'api/translate' "dist 无翻译端点字样（生产零痕
 assert_file dist/en/board/index.html "en 板产出"
 assert_has dist/en/board/index.html '<html lang="en"' "en 板 html lang"
 assert_has dist/en/board/index.html 'href="/board"' "en 板导航指回中文板块入口"
+
+# ---------- /board 展品子页的中英孪生与切换器 ----------
+for slug in stamps lenticular-card tickets birds; do
+  assert_file "dist/en/board/${slug}/index.html" "en 展品子页 ${slug} 产出"
+  assert_has "dist/board/${slug}/index.html" "href=\"/en/board/${slug}\"" "子页语言切换器指向英文孪生"
+  assert_has "dist/en/board/${slug}/index.html" "href=\"/board/${slug}\"" "英文子页切换器指回中文"
+done

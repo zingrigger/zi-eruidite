@@ -1,0 +1,15 @@
+---
+import BoardExhibit from "@/components/BoardExhibit.astro"
+import { BOARD_SECTIONS } from "@/data/board-sections"
+
+export function getStaticPaths() {
+  return BOARD_SECTIONS.map(({ slug }) => ({
+    params: { slug },
+    props: { slug },
+  }))
+}
+
+const { slug } = Astro.props
+---
+
+<BoardExhibit slug={slug} locale="zh" />

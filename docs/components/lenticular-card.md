@@ -17,7 +17,7 @@ vanilla-tilt / motion / Three.js 的逐条论证）；实施步骤：
 - 接线：`src/lib/lenticular.ts`（`mountLenticular()`：Pointer/Keyboard 事件、rAF、写
   CSS 变量与 ARIA、`destroy()`）
 - 样式：`src/styles/lenticular.css`，已在 `src/layouts/Layout.astro` 中**全局引入**
-- 在用它的地方：`/board` 与 `/en/board` 的「光栅卡」小节里（`src/components/LenticularSection.astro`，两张图直接 import，不再经 `getBoardViews`）
+- 在用它的地方：`/board/lenticular-card` 与 `/en/board/lenticular-card` 子页（页头与封装在 `src/components/exhibits/LenticularExhibit.astro` → `src/components/LenticularSection.astro`，两张图直接 import，不再经 `getBoardViews`）
 - 回归：`scripts/tests/lenticular-check.sh`（构建产物断言）、
   `scripts/tests/lenticular-motion-check.sh`（物理与进度的纯函数离线断言）
 
@@ -40,7 +40,7 @@ import LenticularCard from "@/components/LenticularCard.astro"
 ```
 
 `altA/altB` 收**已按当前 locale 取好的字符串**。卡不再叠面名文字，所以只需两张图与两段
-替代文本；`/board` 上的封装 `LenticularSection.astro` 直接 import 那两枚邮票的原图，与
+替代文本；`/board/lenticular-card` 上的封装 `LenticularSection.astro` 直接 import 那两枚邮票的原图，与
 `getBoardViews` 解耦（这两枚邮票只有 zh 文案，en 本就回落中文）。
 
 ## Props
@@ -95,6 +95,10 @@ import LenticularCard from "@/components/LenticularCard.astro"
 - **渲染契约**：JS 每帧只往宿主写 `--rx`/`--ry`/`--t`（+ 离散 `--ma`，仅变化时写），
   全是**无单位数字**，CSS 侧自己补单位（`calc(var(--rx) * 1deg)`）。想调手感/长相，在
   `lenticular.css` 里改数值即可，不必动 TS；反过来改 TS 的输入映射也不影响 CSS。
+- **`@property` 是文档级的，名字全站独享**：`--rx`/`--ry`/`--t`/`--ma` 一经注册就没有作用域，全站
+  任何组件往同名变量写不符合 `syntax: "<number>"` 的值（例如 `8deg`）都会 *invalid at
+  computed-value time* 静默变成 `initial-value`。票券倾斜最初就这么坏的（它写 deg 到 `--rx`，
+  于是永远不倾），现在它改用 `--tk-rx`/`--tk-ry`。新组件请避开这四个名字。
 - 别在 3D 节点上用 `filter`（会压平 3D 并让节点自成为 containing block），投影走
   `box-shadow`。`scripts/tests/lenticular-check.sh` 里有一条源码级断言守着这点。
 - 卡是**单个平面**：只让 `lens-stage` 做一次 3D 变换，两层画面是共面兄弟，**不需要**
@@ -122,7 +126,7 @@ import LenticularCard from "@/components/LenticularCard.astro"
 
 ## 完整示例
 
-`/board` 上的实际用法在 `src/components/LenticularSection.astro`：直接 import 两张原图、
+`/board/lenticular-card` 上的实际用法在 `src/components/LenticularSection.astro`：直接 import 两张原图、
 就地写中文 alt，再交给 `LenticularCard`，与 `getBoardViews` 解耦：
 
 ```ts
@@ -145,6 +149,6 @@ const altB =
 />
 ```
 
-`LenticularSection` 渲染在板面的「光栅卡」`ListingHead` 之下（`/board` 与 `/en/board`），
+`LenticularSection` 渲染在「光栅卡」`ListingHead` 之下（`/board/lenticular-card` 与 `/en/board/lenticular-card`，页头由 `LenticularExhibit.astro` 出），
 独立于 `board-grid`，**不是** `board-piece`：因此不参与拖拽、右键径向菜单、双击 GlassBubble
 预览，也不被 dev「保存布局」写回（倾斜是运行时动画，不是几何）。

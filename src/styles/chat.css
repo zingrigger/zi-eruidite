@@ -1,0 +1,107 @@
+/* mdxcn chat 的无运行时 Markdown 适配：静态对话仍保留可读结构。 */
+api-chat {
+  --chat-stage: color-mix(in oklab, var(--muted) 42%, var(--background));
+  --chat-border: color-mix(in oklab, var(--foreground) 42%, transparent);
+  --chat-muted: color-mix(in oklab, var(--foreground) 62%, transparent);
+  display: block;
+  margin-block: var(--space-m);
+  padding: clamp(var(--space-s), 5vw, var(--space-xl));
+  background: var(--chat-stage);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+api-chat chat-frame {
+  position: relative;
+  display: block;
+  padding: var(--space-l) var(--space-m) var(--space-m);
+  border: 1px dashed var(--chat-border);
+}
+
+api-chat chat-frame > header {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  display: flex;
+  gap: var(--space-2xs);
+  padding-inline: var(--space-2xs);
+  transform: translate(-50%, -50%);
+  background: var(--chat-stage);
+  color: var(--accent);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+api-chat chat-frame > header::before,
+api-chat chat-frame > header::after {
+  content: "+";
+  color: var(--chat-muted);
+}
+
+api-chat chat-turn {
+  display: grid;
+  grid-template-columns: 1.25rem 5rem minmax(0, 1fr);
+  gap: var(--space-2xs);
+  align-items: start;
+}
+
+api-chat chat-turn + chat-turn {
+  margin-block-start: var(--space-2xs);
+}
+
+api-chat chat-turn::before {
+  content: "";
+  color: var(--accent);
+}
+
+api-chat chat-turn[data-speaker="you"]::before {
+  content: ">";
+  font-weight: var(--font-weight-medium);
+}
+
+api-chat chat-speaker {
+  color: var(--chat-muted);
+}
+
+api-chat chat-turn[data-speaker="you"] chat-speaker {
+  color: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+api-chat chat-messages {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+api-chat chat-message {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+api-chat chat-message p {
+  margin: 0;
+}
+
+api-chat chat-message em {
+  color: var(--chat-muted);
+}
+
+@media (width < 40rem) {
+  api-chat {
+    padding: var(--space-s) var(--space-xs);
+  }
+
+  api-chat chat-frame {
+    padding: var(--space-l) var(--space-xs) var(--space-s);
+  }
+
+  api-chat chat-turn {
+    grid-template-columns: 1.25rem 4.5rem minmax(0, 1fr);
+    gap: var(--space-3xs);
+  }
+}

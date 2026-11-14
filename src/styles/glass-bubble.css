@@ -50,11 +50,12 @@ glass-bubble > canvas[data-over="true"]:active {
   cursor: grabbing;
 }
 
-/* ══ 收藏板原图预览（Board.astro 的 <dialog class="board-preview">）═══
+/* ══ 收藏板/鸟类板原图预览（Board.astro 的 <dialog class="board-preview">、
+   BirdBoard.astro 的 <dialog class="bird-preview">，选择器同族并列）═══
    双击邮票弹出：showModal 把原生 dialog 提升到顶层，板面 overflow:clip
    关不住它。骨架由 SSR 渲染、泡与图由 JS 动态建——Astro scoped 样式选不中
    动态元素，故 dialog 的呈现全住在这份全局 CSS 里（与玻璃泡同族）。 */
-dialog.board-preview {
+dialog.board-preview, dialog.bird-preview {
   box-sizing: border-box;
   width: min(92vw, 620px + 2.5rem);
   max-height: 92vh;
@@ -68,16 +69,19 @@ dialog.board-preview {
   box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
 }
 
-dialog.board-preview::backdrop {
+dialog.board-preview::backdrop,
+dialog.bird-preview::backdrop {
   background: rgb(0 0 0 / 0.55);
 }
 
 /* 预览里的玻璃泡去掉页面级下边距，在 dialog 里居中 */
-dialog.board-preview glass-bubble {
+dialog.board-preview glass-bubble,
+dialog.bird-preview glass-bubble {
   margin-block: 0;
 }
 
-dialog.board-preview .preview-close {
+dialog.board-preview .preview-close,
+dialog.bird-preview .preview-close {
   position: absolute;
   top: 0.6rem;
   right: 0.6rem;
@@ -93,11 +97,13 @@ dialog.board-preview .preview-close {
   cursor: pointer;
 }
 
-dialog.board-preview .preview-close:hover {
+dialog.board-preview .preview-close:hover,
+dialog.bird-preview .preview-close:hover {
   color: var(--accent);
 }
 
-dialog.board-preview .preview-close:focus-visible {
+dialog.board-preview .preview-close:focus-visible,
+dialog.bird-preview .preview-close:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

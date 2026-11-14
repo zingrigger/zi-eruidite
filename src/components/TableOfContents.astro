@@ -372,6 +372,7 @@ const locale = localeFromPath(Astro.url.pathname)
 </style>
 
 <script>
+  import { activeTarget } from "@/lib/scroll"
   import { hashId } from "@/lib/utils"
 
   ;(() => {
@@ -394,12 +395,16 @@ const locale = localeFromPath(Astro.url.pathname)
 
     const seen = new Map<string, number>()
     const links = new Map<Element, HTMLAnchorElement>()
+    const anchors = new Map<HTMLAnchorElement, Element>()
     for (const a of nav.querySelectorAll<HTMLAnchorElement>("a[href^='#']")) {
       const id = hashId(a.hash)
       const nth = seen.get(id) ?? 0
       seen.set(id, nth + 1)
       const target = document.querySelectorAll(`[id="${CSS.escape(id)}"]`)[nth]
-      if (target) links.set(target, a)
+      if (target) {
+        links.set(target, a)
+        anchors.set(a, target)
+      }
     }
     const articles = document.querySelectorAll("main article")
     const list = nav.querySelector(":scope > ul")
@@ -440,6 +445,12 @@ const locale = localeFromPath(Astro.url.pathname)
 
     const visible = new Set<Element>()
     let prevActive = new Set<Element>()
+    /* 点 TOC 后定住的节：跳转是明确意图，只亮这一节，直到用户真把它
+       划出视口。否则短小节的下一节标题（尤其跨层级折角处）在底部
+       露一下就跟着点亮，形成双高亮。pinSeen 防止跳转途中（目标还没
+       进入判定带）的中间回调把定住状态误清。 */
+    let pinned: Element | null = null
+    let pinSeen = false
 
     const center = () => {
       const run = [
@@ -462,8 +473,13 @@ const locale = localeFromPath(Astro.url.pathname)
       if (toggle.checked) center()
     })
     list.addEventListener("click", (event) => {
-      if (toggle && (event.target as Element).closest?.("a")) {
-        toggle.checked = false
+      const anchor = (event.target as Element).closest?.("a[href^='#']")
+      if (!anchor) return
+      if (toggle) toggle.checked = false
+      const target = anchors.get(anchor as HTMLAnchorElement)
+      if (target) {
+        pinned = target
+        pinSeen = false
       }
     })
 
@@ -580,7 +596,7 @@ const locale = localeFromPath(Astro.url.pathname)
     document.fonts.ready.then(buildRail)
     buildRail()
 
-    const observer = new IntersectionObserver((entries) => {
+    const onIntersect = (entries: IntersectionObserverEntry[]) => {
       for (const entry of entries) {
         if (entry.target === heading) {
           const past = !entry.isIntersecting
@@ -593,6 +609,16 @@ const locale = localeFromPath(Astro.url.pathname)
       for (const block of visible) {
         const target = sectionOf.get(block)
         if (target) activeTargets.add(target)
+      }
+
+      if (pinned) {
+        if (activeTargets.has(pinned)) {
+          pinSeen = true
+          activeTargets.clear()
+          activeTargets.add(pinned)
+        } else if (pinSeen) {
+          pinned = null
+        }
       }
 
       let firstActive: HTMLAnchorElement | undefined
@@ -627,13 +653,54 @@ const locale = localeFromPath(Astro.url.pathname)
       prevActive = activeTargets
       if (grew) center()
       updateRailClip()
-    })
-
-    for (const block of sectionOf.keys()) observer.observe(block)
-    if (heading) {
-      observer.observe(heading)
-    } else {
-      title?.toggleAttribute("data-visible", true)
     }
+
+    /* 观测上界必须对齐锚点落点线而非视口顶：点 TOC 跳转后上一节末块
+       仍会残留十几像素在顶部留白带内，而 IO 的「可见」门槛是任意 1px
+       交叠，于是上一节也跟着点亮（双高亮）。落点线 = 滚动源的
+       scroll-padding（窄屏吸顶栏高度）+ 标题 scroll-margin（宽屏顶栏
+       留白），按下取整取安全侧——抬得比落点更深会切掉刚落地的标题。
+       断点、布局切换（滚动源变化）与 resize（Utopia 流体令牌改变落点
+       线）都要重建观测器。 */
+    let observer: IntersectionObserver | undefined
+    let observerKey = ""
+    const observe = () => {
+      const root = activeTarget()
+      const scroller =
+        root instanceof HTMLElement ? root : document.documentElement
+      const source =
+        [...links.keys()].find((el) => el.closest("prose-content")) ??
+        links.keys().next().value
+      const px = (value: string) => {
+        const n = Number.parseFloat(value)
+        return Number.isFinite(n) && n > 0 ? n : 0
+      }
+      const inset = Math.floor(
+        px(getComputedStyle(source ?? scroller).scrollMarginTop) +
+          px(getComputedStyle(scroller).scrollPaddingTop),
+      )
+      const key = `${inset}/${root instanceof HTMLElement ? "element" : "window"}`
+      if (observer && key === observerKey) return
+      observerKey = key
+
+      observer?.disconnect()
+      // 新建观测器会给每个 target 补一次初始回调，先清空避免旧状态残留
+      visible.clear()
+      observer = new IntersectionObserver(onIntersect, {
+        root: root instanceof HTMLElement ? root : null,
+        rootMargin: inset ? `-${inset}px 0px 0px 0px` : "0px",
+      })
+      for (const block of sectionOf.keys()) observer.observe(block)
+      if (heading) observer.observe(heading)
+      else title?.toggleAttribute("data-visible", true)
+    }
+
+    desktop.addEventListener("change", observe)
+    addEventListener("resize", observe)
+    new MutationObserver(observe).observe(document.documentElement, {
+      attributeFilter: ["data-layout"],
+    })
+    document.fonts.ready.then(observe)
+    observe()
   })()
 </script>

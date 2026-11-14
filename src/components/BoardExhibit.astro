@@ -1,0 +1,42 @@
+---
+import BirdsExhibit from "@/components/exhibits/BirdsExhibit.astro"
+import LenticularExhibit from "@/components/exhibits/LenticularExhibit.astro"
+import StampsExhibit from "@/components/exhibits/StampsExhibit.astro"
+import TicketsExhibit from "@/components/exhibits/TicketsExhibit.astro"
+import MetaPage from "@/components/MetaPage.astro"
+import Layout from "@/layouts/Layout.astro"
+import { BOARD_SECTIONS } from "@/data/board-sections"
+import { localePath, t, type Locale } from "@/lib/i18n"
+
+type Props = {
+  slug: string
+  locale: Locale
+}
+
+/** slug → 展品组件，键与 BOARD_SECTIONS 逐一对应。 */
+const EXHIBITS = {
+  stamps: StampsExhibit,
+  "lenticular-card": LenticularExhibit,
+  tickets: TicketsExhibit,
+  birds: BirdsExhibit,
+}
+
+const { slug, locale } = Astro.props
+const section = BOARD_SECTIONS.find((entry) => entry.slug === slug)
+if (!section) throw new Error(`未登记的展品 slug：${slug}`)
+const Exhibit = EXHIBITS[slug as keyof typeof EXHIBITS]
+---
+
+<Layout
+  crumbs={[
+    { label: t(locale, "navBoard"), href: localePath("/board", locale) },
+  ]}
+>
+  <MetaPage
+    slot="head"
+    title={t(locale, section.titleKey)}
+    description={t(locale, section.descKey)}
+    alternates={{ zh: `/board/${slug}`, en: `/en/board/${slug}` }}
+  />
+  <Exhibit locale={locale} />
+</Layout>

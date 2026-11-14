@@ -1,0 +1,142 @@
+/* mdxcn endpoint 的无运行时 Markdown 适配：文章直接输出语义化 HTML。 */
+api-endpoint {
+  --endpoint-border: color-mix(in oklab, var(--foreground) 42%, transparent);
+  --endpoint-muted: color-mix(in oklab, var(--foreground) 62%, transparent);
+  --endpoint-rule: color-mix(in oklab, var(--foreground) 22%, transparent);
+  display: block;
+  margin-block: var(--space-m);
+  padding: var(--space-s);
+  border: 1px dashed var(--endpoint-border);
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--background) 94%, var(--foreground));
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+api-endpoint > header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: calc(-1 * var(--space-s)) calc(-1 * var(--space-s)) var(--space-s);
+  padding: var(--space-2xs) var(--space-s);
+  border-block-end: 1px dashed var(--endpoint-border);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+}
+
+api-endpoint > header::before,
+api-endpoint > header::after {
+  content: "+";
+  color: var(--endpoint-muted);
+}
+
+api-endpoint > header strong {
+  font-weight: var(--font-weight-medium);
+}
+
+api-endpoint api-route {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  align-items: baseline;
+  margin-block-end: var(--space-2xs);
+}
+
+api-endpoint api-route code:first-child {
+  color: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+api-endpoint api-route code:last-child {
+  overflow-wrap: anywhere;
+}
+
+api-endpoint > p {
+  margin-block: 0 var(--space-s);
+  color: var(--endpoint-muted);
+}
+
+api-endpoint api-params {
+  display: block;
+  margin-block-end: var(--space-s);
+  padding-block: var(--space-2xs);
+  border-block: 1px dashed var(--endpoint-rule);
+}
+
+api-endpoint api-params dl {
+  display: grid;
+  grid-template-columns: minmax(7rem, auto) minmax(5rem, auto) 1fr;
+  gap: var(--space-3xs) var(--space-s);
+  margin: 0;
+}
+
+api-endpoint api-params dl > div {
+  display: contents;
+}
+
+api-endpoint api-params dt,
+api-endpoint api-params dd {
+  margin: 0;
+}
+
+api-endpoint api-params dd:last-child {
+  color: var(--endpoint-muted);
+}
+
+api-endpoint api-blocks {
+  display: grid;
+  gap: var(--space-s);
+}
+
+api-endpoint api-block {
+  display: block;
+}
+
+api-endpoint api-block h3 {
+  margin: 0 0 var(--space-3xs);
+  color: var(--endpoint-muted);
+  font-size: inherit;
+  font-weight: var(--font-weight-normal);
+  text-transform: lowercase;
+}
+
+api-endpoint api-block pre {
+  margin: 0;
+  padding: var(--space-2xs) var(--space-xs);
+  overflow-x: auto;
+  border-inline-start: 2px solid var(--endpoint-rule);
+  background: color-mix(in oklab, var(--background) 88%, var(--foreground));
+}
+
+api-endpoint api-block code {
+  font: inherit;
+  white-space: pre;
+}
+
+@media (width < 40rem) {
+  api-endpoint {
+    padding: var(--space-xs);
+  }
+
+  api-endpoint > header {
+    margin: calc(-1 * var(--space-xs)) calc(-1 * var(--space-xs)) var(--space-xs);
+    padding-inline: var(--space-xs);
+  }
+
+  api-endpoint api-params dl {
+    grid-template-columns: 1fr;
+    gap: var(--space-3xs);
+  }
+
+  api-endpoint api-params dl > div {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: var(--space-2xs);
+  }
+
+  api-endpoint api-params dd:last-child {
+    grid-column: 1 / -1;
+    margin-block-end: var(--space-2xs);
+  }
+}

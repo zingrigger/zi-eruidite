@@ -1,0 +1,87 @@
+---
+import ListingHead from "@/components/ListingHead.astro"
+import MetaPage from "@/components/MetaPage.astro"
+import Layout from "@/layouts/Layout.astro"
+import { BOARD_SECTIONS } from "@/data/board-sections"
+import { getBirdViews, getBoardViews } from "@/lib/content"
+import { localePath, t, type Locale } from "@/lib/i18n"
+
+type Props = {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+
+// 计数由数据现算，不写死在登记里；光栅卡与票券没有自然计数，省略
+const counts: Record<string, number> = {
+  stamps: (await getBoardViews(locale)).length,
+  birds: (await getBirdViews(locale)).length,
+}
+---
+
+<Layout>
+  <MetaPage
+    slot="head"
+    title={t(locale, "navBoard")}
+    description={t(locale, "boardDesc")}
+    alternates={{ zh: "/board", en: "/en/board" }}
+  />
+  <ListingHead
+    kicker={`~/board · ${BOARD_SECTIONS.length} exhibits`}
+    title={t(locale, "navBoard")}
+    desc={t(locale, "boardDesc")}
+    figure="drawer"
+    figureLabel={t(locale, "boardFigureLabel")}
+  />
+  <ul>
+    {BOARD_SECTIONS.map(({ slug, titleKey, descKey, wideOnly }) => (
+      <li data-wide-only={wideOnly || undefined}>
+        <a href={localePath(`/board/${slug}`, locale)}>{t(locale, titleKey)}</a>
+        {counts[slug] !== undefined && (
+          <p class="count">
+            {counts[slug]} {t(locale, "boardPieceUnit")}
+          </p>
+        )}
+        <p class="desc">{t(locale, descKey)}</p>
+      </li>
+    ))}
+  </ul>
+</Layout>
+
+<style>
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+  }
+
+  li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xs);
+  }
+
+  li > a {
+    font-size: var(--step-1);
+    line-height: calc(var(--leading-offset) + 1em);
+    font-weight: var(--font-weight-medium);
+  }
+
+  li p {
+    margin: 0;
+    color: var(--muted-foreground);
+  }
+
+  .count {
+    font-family: var(--font-mono);
+    font-size: calc(var(--step--1) - 1px);
+    letter-spacing: 0.04em;
+  }
+
+  /* 邮票板窄屏摆不开：列表里藏掉这一条目（子页仍留页头与宽屏提示） */
+  @media (width < 64rem) {
+    li[data-wide-only] {
+      display: none;
+    }
+  }
+</style>

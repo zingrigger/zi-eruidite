@@ -1,0 +1,51 @@
+---
+import BirdBoard from "@/components/BirdBoard.astro"
+import ListingHead from "@/components/ListingHead.astro"
+import { t, type Locale } from "@/lib/i18n"
+
+type Props = {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+---
+
+<ListingHead
+  kicker="~/board/birds"
+  title={t(locale, "birdsTitle")}
+  desc={t(locale, "birdsDesc")}
+/>
+<BirdBoard locale={locale} />
+<!-- 授权署名（必须）：贴纸 PolyForm Shield 1.0.0；数据 MIT；
+     分类与鸟名 IOC v15.2 CC BY 3.0；形态生态 AVONET CC BY 4.0。 -->
+<p class="birds-credit">
+  {t(locale, "birdsCredit")}
+  <a
+    href="https://github.com/alchaincyf/huashu-bird-sticker"
+    target="_blank"
+    rel="noopener noreferrer"
+    >{t(locale, "birdsCreditRepo")}</a
+  >
+  ·
+  <a
+    href="https://github.com/alchaincyf/huashu-bird-sticker/blob/main/LICENSE.md"
+    target="_blank"
+    rel="noopener noreferrer"
+    >{t(locale, "birdsCreditLicense")}</a
+  >
+</p>
+
+<style>
+  .birds-credit {
+    max-width: 60ch;
+    margin: var(--space-l) auto 0;
+    color: var(--muted-foreground);
+    font-size: var(--step--1);
+    text-align: center;
+  }
+
+  .birds-credit a {
+    color: var(--accent);
+    text-underline-offset: 2px;
+  }
+</style>

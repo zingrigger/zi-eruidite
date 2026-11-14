@@ -1,0 +1,509 @@
+---
+/**
+ * 票券卡（自主定制元素 <ticket-card>）：一枚「被收藏的票券」——礼品券 / 折扣券 /
+ * 电子门票三种版式，横竖两向，蓝白两色对调。纯 SSR 表现层，无 JS、不参与拖拽。
+ *
+ * 造型手法沿用收藏板邮票那套「构建期 SVG 矢量 mask 镂空 + drop-shadow 跟随轮廓」：
+ * 主券与副券之间用虚线撕裂线分隔，撕裂线两端各挖一个半圆缺口（mask 真镂空，非
+ * 「页面色圆」——后者在浅色下会消失并盖住投影）。投影走宿主上的 filter:drop-shadow，
+ * 因为 body 被 mask 打了缺口，宿主 alpha 即含缺口，阴影自然跟随轮廓。
+ *
+ * 条形码 / 二维码点阵均为构建期确定性生成（xorshift32 定种子），内联成 currentColor
+ * SVG，纯装饰不可扫，零依赖、零二进制资产。
+ */
+import { Image } from "astro:assets"
+import type { ImageMetadata } from "astro"
+import type { HTMLAttributes } from "astro/types"
+
+type Variant = "voucher" | "coupon" | "eticket"
+type Orient = "h" | "v"
+
+type Props = {
+  /** 版式：礼品券 / 折扣券 / 电子门票 */
+  variant?: Variant
+  /** 横版 h（副券在侧）/ 竖版 v（副券在底） */
+  orient?: Orient
+  /** 蓝白对调：false = 白主蓝副；true = 蓝主白副 */
+  invert?: boolean
+  /** 顶部小标签，如 "GIFT VOUCHER" / "E-TICKET" */
+  label?: string
+  /** 主数字，如 "75%" / "$100" / "DAY PASS" */
+  amount?: string
+  /** 名称行（电子门票的活动名 / 券的商品名） */
+  title?: string
+  /** 副说明，如有效期 / 日期 */
+  sub?: string
+  /** 券码 / 序列号（副券下方小字） */
+  code?: string
+  /** 电子门票的信息行（Name / Date / Seat …） */
+  meta?: { k: string; v: string }[]
+  /** 条形码/点阵的确定性种子 */
+  seed?: number
+  /** viewBox 名义宽（决定缺口/齿孔几何与宽高比），缺省按 orient 取 */
+  w?: number
+  /** viewBox 名义高 */
+  h?: number
+  /** 拼贴里的旋转（度） */
+  rot?: number
+  /** 卡面宽度（CSS 长度），内部文字按此等比缩放 */
+  width?: string
+  /** 图片主题下填充实心蓝侧的插画（缺省则该卡在图片主题下仍为纯蓝） */
+  image?: ImageMetadata
+  // 自定义元素不在 HTMLTag（DefinedIntrinsicElements）集合内，无法直接
+  // HTMLAttributes<"ticket-card">；借用 "div" 的通用容器属性透传，同 Board.astro
+} & HTMLAttributes<"div">
+
+const {
+  variant = "voucher",
+  orient = "h",
+  invert = false,
+  label = "GIFT VOUCHER",
+  amount = "75%",
+  title,
+  sub = "VALID UNTIL 12 DEC 2024",
+  code = "GIFT-2024-8842",
+  meta,
+  seed = 7,
+  w,
+  h,
+  rot = 0,
+  width = "16rem",
+  image,
+  ...attrs
+} = Astro.props
+
+// 版式派生的默认几何与副券位置
+const vbW = w ?? (orient === "v" ? 220 : 320)
+const vbH = h ?? (orient === "v" ? 300 : variant === "eticket" ? 182 : 150)
+const perforate = variant === "voucher"
+const stubSide: "left" | "right" | "bottom" =
+  orient === "v" ? "bottom" : variant === "eticket" ? "left" : "right"
+// 副券占比与撕裂线位置（viewBox 单位）；--tk-stub 管副券尺寸，--tk-seam 管虚线定位
+const stubFrac = stubSide === "right" ? 0.32 : 0.3
+const seamVB =
+  orient === "v"
+    ? vbH * (1 - stubFrac)
+    : stubSide === "left"
+      ? vbW * stubFrac
+      : vbW * (1 - stubFrac)
+const seamPct =
+  orient === "v"
+    ? `${((seamVB / vbH) * 100).toFixed(2)}%`
+    : `${((seamVB / vbW) * 100).toFixed(2)}%`
+const stubPct = `${(stubFrac * 100).toFixed(2)}%`
+
+// 构建期 SVG 矢量 mask：白圆角矩形减去「齿孔（可选）+ 撕裂线两端半圆缺口」。
+// viewBox 尺寸 = 元素名义宽高比，CSS 端 mask-size:100% 等比映射 → 圆不变椭圆。
+function ticketMaskUrl(): string {
+  const holes: string[] = []
+  if (perforate) {
+    const r = 5
+    const step = 13
+    for (let x = 0; x <= vbW; x += step) {
+      holes.push(
+        `<circle cx="${x}" cy="0" r="${r}"/>`,
+        `<circle cx="${x}" cy="${vbH}" r="${r}"/>`,
+      )
+    }
+    for (let y = step; y < vbH; y += step) {
+      holes.push(
+        `<circle cx="0" cy="${y}" r="${r}"/>`,
+        `<circle cx="${vbW}" cy="${y}" r="${r}"/>`,
+      )
+    }
+  }
+  const n = 9 // 缺口半径
+  if (orient === "v") {
+    holes.push(
+      `<circle cx="0" cy="${seamVB}" r="${n}"/>`,
+      `<circle cx="${vbW}" cy="${seamVB}" r="${n}"/>`,
+    )
+  } else {
+    holes.push(
+      `<circle cx="${seamVB}" cy="0" r="${n}"/>`,
+      `<circle cx="${seamVB}" cy="${vbH}" r="${n}"/>`,
+    )
+  }
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vbW} ${vbH}">` +
+    `<defs><mask id="t">` +
+    `<rect width="${vbW}" height="${vbH}" rx="10" fill="#fff"/>` +
+    `<g fill="#000">${holes.join("")}</g>` +
+    `</mask></defs>` +
+    `<rect width="${vbW}" height="${vbH}" fill="#fff" mask="url(#t)"/>` +
+    `</svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+const maskUrl = ticketMaskUrl()
+
+// 确定性伪随机（xorshift32）
+function rng(s: number): () => number {
+  let x = s | 0 || 0x9e3779b9
+  return () => {
+    x ^= x << 13
+    x |= 0
+    x ^= x >>> 17
+    x ^= x << 5
+    x |= 0
+    return (x >>> 0) / 4294967295
+  }
+}
+
+// 条形码：变宽竖条，横向铺满 viewBox，preserveAspectRatio=none 随容器拉伸
+function barcode(s: number): string {
+  const r = rng(s * 2654435761)
+  let x = 0
+  const bars: string[] = []
+  for (let i = 0; i < 46; i++) {
+    const bw = 1 + Math.floor(r() * 3)
+    if (r() > 0.4) bars.push(`<rect x="${x}" width="${bw}" height="100"/>`)
+    x += bw + 1 + Math.floor(r() * 2)
+  }
+  return `<svg class="tk-bar" viewBox="0 0 ${x} 100" preserveAspectRatio="none" aria-hidden="true"><g fill="currentColor">${bars.join(
+    "",
+  )}</g></svg>`
+}
+
+// 点阵码：21×21，三角落定位图案 + 伪随机模块，纯装饰
+function dotMatrix(s: number, n = 21): string {
+  const r = rng(s * 40503 + 12345)
+  const cells: string[] = []
+  const finder = (fx: number, fy: number) => {
+    for (let y = 0; y < 7; y++) {
+      for (let x = 0; x < 7; x++) {
+        const edge = x === 0 || x === 6 || y === 0 || y === 6
+        const core = x >= 2 && x <= 4 && y >= 2 && y <= 4
+        if (edge || core)
+          cells.push(`<rect x="${fx + x}" y="${fy + y}" width="1" height="1"/>`)
+      }
+    }
+  }
+  finder(0, 0)
+  finder(n - 7, 0)
+  finder(0, n - 7)
+  const inFinder = (x: number, y: number) =>
+    (x < 8 && y < 8) || (x >= n - 8 && y < 8) || (x < 8 && y >= n - 8)
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      if (inFinder(x, y)) continue
+      if (r() > 0.55)
+        cells.push(`<rect x="${x}" y="${y}" width="1" height="1"/>`)
+    }
+  }
+  return `<svg class="tk-qr" viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true"><g fill="currentColor">${cells.join(
+    "",
+  )}</g></svg>`
+}
+
+const bar = barcode(seed)
+const matrix = dotMatrix(seed)
+
+// 图片主题：把「实心蓝那一侧」（非反转=副券 / 反转=主区）换成插画 + 深蓝蒙版。
+// 图层只在祖先 <ticket-showcase data-theme="image"> 时显形（见文末 CSS），默认纯蓝白。
+// 注：JSX 只能写在模板里，故填充层在下方 main/stub 内就地内联，不在此建变量。
+const accentIsMain = invert
+---
+
+<ticket-card
+  {...attrs}
+  class:list={[`tk-${variant}`, `tk-${orient}`, invert && "tk-invert"]}
+  style={`--tk-w:${width}; --tk-ar:${vbW} / ${vbH}; --tk-mask:url("${maskUrl}"); --tk-seam:${seamPct}; --tk-stub:${stubPct}; --rot:${rot}deg`}
+>
+  <ticket-body class="tk-body">
+    <ticket-main class:list={["tk-main", accentIsMain && "tk-accent"]}>
+      {image &&
+        accentIsMain && (
+          <ticket-fill class="tk-fill">
+            <Image
+              src={image}
+              alt=""
+              width={400}
+              class="tk-fill-img"
+              loading="lazy"
+              decoding="async"
+            />
+          </ticket-fill>
+        )}
+      {variant === "eticket" ? (
+          <>
+            <span class="tk-label">{label}</span>
+            {title && <span class="tk-title">{title}</span>}
+            <span class="tk-amount tk-amount--sm">{amount}</span>
+            {sub && <span class="tk-sub">{sub}</span>}
+            {meta && meta.length > 0 && (
+              <dl class="tk-meta">
+                {meta.map((m) => (
+                  <div class="tk-meta-row">
+                    <dt>{m.k}</dt>
+                    <dd>{m.v}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </>
+        ) : (
+          <>
+            <span class="tk-label">{label}</span>
+            <span class="tk-amount">{amount}</span>
+            {title && <span class="tk-title">{title}</span>}
+            {sub && <span class="tk-sub">{sub}</span>}
+          </>
+        )}
+    </ticket-main>
+    <ticket-stub class:list={["tk-stub", !accentIsMain && "tk-accent"]}>
+      {image &&
+        !accentIsMain && (
+          <ticket-fill class="tk-fill">
+            <Image
+              src={image}
+              alt=""
+              width={400}
+              class="tk-fill-img"
+              loading="lazy"
+              decoding="async"
+            />
+          </ticket-fill>
+        )}
+      {variant === "eticket" ? (
+          <span class="tk-code" set:html={matrix} />
+        ) : (
+          <span class="tk-stub-label">{title ?? label}</span>
+        )}
+      <span class="tk-code" set:html={bar} />
+      {code && <span class="tk-code-text">{code}</span>}
+    </ticket-stub>
+  </ticket-body>
+</ticket-card>
+
+<style>
+  ticket-card {
+    /* 票券是「被收藏的实物」，配色固定蓝白，不随明暗主题反转 */
+    --tk-blue: #1d4ed8;
+    --tk-blue-deep: #1636a6;
+    --tk-ink: #14235f;
+    --tk-paper: #ffffff;
+    --tk-tint: #e7eeff;
+    --tk-perf: rgba(29, 78, 216, 0.55);
+
+    --tk-main-bg: var(--tk-paper);
+    --tk-main-fg: var(--tk-ink);
+    --tk-stub-bg: var(--tk-blue);
+    --tk-stub-fg: #ffffff;
+
+    display: inline-block;
+    width: var(--tk-w);
+    font-size: calc(var(--tk-w) * 0.05);
+    line-height: 1.1;
+    transform: rotate(var(--rot));
+    /* 投影跟随被 mask 打过缺口的轮廓（宿主 alpha 含缺口） */
+    filter: drop-shadow(0 0.35em 0.55em rgba(10, 20, 60, 0.28));
+    isolation: isolate;
+  }
+  ticket-card.tk-invert {
+    --tk-main-bg: var(--tk-blue);
+    --tk-main-fg: #ffffff;
+    --tk-stub-bg: var(--tk-paper);
+    --tk-stub-fg: var(--tk-ink);
+  }
+
+  .tk-body {
+    display: flex;
+    aspect-ratio: var(--tk-ar);
+    background: var(--tk-main-bg);
+    color: var(--tk-main-fg);
+    /* 真镂空：撕口两端半圆 + 可选齿孔边缘 */
+    -webkit-mask: var(--tk-mask) center / 100% 100% no-repeat;
+    mask: var(--tk-mask) center / 100% 100% no-repeat;
+  }
+  .tk-v .tk-body {
+    flex-direction: column;
+  }
+  /* 副券在左：整行反序，主券占右 */
+  ticket-card.tk-eticket.tk-h .tk-body {
+    flex-direction: row-reverse;
+  }
+
+  .tk-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.4em;
+    padding: 1.1em 1.2em;
+  }
+  .tk-stub {
+    flex: 0 0 var(--tk-stub);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6em;
+    padding: 0.9em 0.7em;
+    background: var(--tk-stub-bg);
+    color: var(--tk-stub-fg);
+    text-align: center;
+  }
+  /* 撕裂虚线：贴在副券靠主券一侧的边缘 */
+  .tk-h .tk-stub {
+    border-left: 0.12em dashed var(--tk-perf);
+  }
+  ticket-card.tk-eticket.tk-h .tk-stub {
+    border-left: 0;
+    border-right: 0.12em dashed var(--tk-perf);
+  }
+  .tk-v .tk-stub {
+    border-top: 0.12em dashed var(--tk-perf);
+  }
+
+  /* 图片主题：实心蓝侧铺插画 + 深蓝蒙版，文字/条码浮于其上 */
+  .tk-main,
+  .tk-stub {
+    position: relative;
+  }
+  .tk-fill {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    display: none;
+    z-index: 0;
+  }
+  .tk-fill-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .tk-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(15, 28, 68, 0.34), rgba(15, 28, 68, 0.5));
+  }
+  /* 内容浮在填充层之上 */
+  .tk-main > :not(.tk-fill),
+  .tk-stub > :not(.tk-fill) {
+    position: relative;
+    z-index: 1;
+  }
+  /* 显隐由 <ticket-showcase> 上的 data-theme 决定（祖先在别的组件，故 :global） */
+  :global([data-theme="image"]) .tk-fill {
+    display: block;
+  }
+  /* 图片主题：落在图上的白字加描影保可读 */
+  :global([data-theme="image"]) .tk-accent {
+    text-shadow: 0 1px 2px rgba(6, 12, 40, 0.6);
+  }
+
+  .tk-label {
+    font-size: 0.92em;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .tk-amount {
+    font-size: 3.4em;
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+  }
+  .tk-amount--sm {
+    font-size: 1.7em;
+    line-height: 1;
+  }
+  .tk-title {
+    font-size: 1.15em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .tk-sub {
+    font-size: 0.72em;
+    letter-spacing: 0.08em;
+    opacity: 0.82;
+    text-transform: uppercase;
+  }
+  .tk-stub-label {
+    font-size: 0.72em;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+  .tk-code {
+    display: block;
+    width: 100%;
+  }
+  .tk-code :global(.tk-bar) {
+    display: block;
+    width: 100%;
+    height: 2.6em;
+  }
+  .tk-code :global(.tk-qr) {
+    display: block;
+    width: 3.4em;
+    height: 3.4em;
+    margin-inline: auto;
+  }
+  .tk-code-text {
+    font-size: 0.6em;
+    letter-spacing: 0.06em;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    opacity: 0.9;
+  }
+
+  /* 电子门票信息行 */
+  .tk-meta {
+    margin: 0.2em 0 0;
+    display: grid;
+    gap: 0.18em;
+    font-size: 0.66em;
+  }
+  /* 门票主区内容多（标签+活动名+票种+日期+信息行），收紧字号与间距以放进定高 */
+  .tk-eticket .tk-main {
+    gap: 0.28em;
+    padding: 0.85em 1em;
+  }
+  .tk-eticket .tk-title {
+    font-size: 1.02em;
+    line-height: 1.15;
+  }
+  .tk-eticket .tk-amount--sm {
+    font-size: 1.5em;
+  }
+  .tk-eticket .tk-sub {
+    font-size: 0.64em;
+  }
+  .tk-eticket .tk-meta {
+    font-size: 0.58em;
+    gap: 0.1em;
+  }
+  .tk-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6em;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+    padding-bottom: 0.12em;
+  }
+  .tk-meta-row dt {
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .tk-meta-row dd {
+    margin: 0;
+    text-align: right;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    ticket-card {
+      transition: transform 0.25s ease;
+    }
+    ticket-card:hover {
+      transform: rotate(var(--rot)) translateY(-0.25em);
+    }
+  }
+</style>

@@ -1,0 +1,18 @@
+---
+import TicketSection from "@/components/TicketSection.astro"
+import ListingHead from "@/components/ListingHead.astro"
+import { t, type Locale } from "@/lib/i18n"
+
+type Props = {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+---
+
+<ListingHead
+  kicker="~/board/tickets"
+  title={t(locale, "ticketsTitle")}
+  desc={t(locale, "ticketsDesc")}
+/>
+<TicketSection locale={locale} />

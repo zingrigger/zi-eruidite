@@ -7,8 +7,9 @@
 重新摆放；拿起物件不靠板下工具条（已撤），而是在物件上右键（触屏长按、键盘 Tab 到
 物件按 Enter 等价），在其外上角弹出一圈径向操作浮层，可缩放、旋转、镜像、调叠放
 次序，点板面空白即放下；双击一枚邮票则弹出原图预览——整张原图摆进
-[GlassBubble](./glass-bubble.md) 玻璃泡下，可隔着泡拖动观看。面向 `/board`、`/en/board`
-两个页面。
+[GlassBubble](./glass-bubble.md) 玻璃泡下，可隔着泡拖动观看。面向 `/board/stamps`、
+`/en/board/stamps` 两个页面（列表页上的显示名是「邮票和拼贴」；列表与子页的路由结构见
+[BoardIndex](./board-index.md)）。
 
 ## 2. 文件位置
 
@@ -19,8 +20,13 @@
 - 样式：主体内联在 `Board.astro` 的 `<style>`（齿孔/徽章/网格/窄屏回退）；原图预览
 dialog（`<dialog class="board-preview">`）的呈现住在 `src/styles/glass-bubble.css`（全局，因泡与图
   是 JS 动态建的，scoped 选不中）。
-- 路由：`src/pages/board/index.astro`、`src/pages/en/board/index.astro`。
-- 回归：`scripts/tests/board-check.sh`（另在 `i18n-check.sh` 有 `/en/board` 断言）。
+- 宿主：`src/components/exhibits/StampsExhibit.astro`（页头 + 板 + 参考链接与 SVG 署名），
+  外壳 `src/components/BoardExhibit.astro`，列表 `src/components/BoardIndex.astro`。
+- 路由：`src/pages/board/[slug].astro`、`src/pages/en/board/[slug].astro`（slug=`stamps`），
+  列表页 `src/pages/board/index.astro`、`src/pages/en/board/index.astro`。
+- 回归：`scripts/tests/board-check.sh` 的邮票段对 `dist/board/stamps/index.html` 断言
+  （另在 `i18n-check.sh` 有 `/en/board/stamps` 孪生断言）。
+- 路由结构：[BoardIndex 玩具柜列表与展品子页](./board-index.md)。
 
 ## 3. 快速上手
 
@@ -77,9 +83,14 @@ import Board from "@/components/Board.astro"
   `<board-card hidden>`、原图预览 `<board-preview hidden>` 与板下提示行都不出现（`board-hint` 默认 `display: none`，靠
   `stamp-board[data-interactive]` 才亮）——
   提示行不能在无 JS 时承诺一个不存在的交互。SSR 默认 `data-tool="drag"`。
-- **窄屏（`< 64rem`）**：`<board-grid>` 切成只读 CSS 网格，忽略坐标/旋转，拖拽不绑定，
-  按 `z` 顺序陈列；浮层、信息卡片、双击预览与提示行一并禁用，物件也不进 tab 序（`tabIndex` 由
-  `enable()` 随断点设 0/−1）。
+- **窄屏（`< 64rem`）**：手机导航不出现「玩具柜」入口（`NAVIGATION` 条目的
+  `mobileHidden`）；列表页 `/board` 里邮票板那条目整个藏掉（`BoardIndex` 的
+  `li[data-wide-only] { display: none }`）；直接敲 `/board/stamps` 不白屏——
+  `StampsExhibit` 收起 `<div data-wide-only>` 里的板，页头下方留一句
+  `boardWideOnly`「这件展品需要宽屏才能摆开，请在电脑上打开。」（英文同位置）。
+  组件内部仍保留只读网格回退（`<board-grid>` 切成 CSS 网格，忽略坐标/旋转、
+  按 `z` 顺序陈列、不绑拖拽；浮层/卡片/预览/提示行与 tab 序一并禁用），但两条
+  窄屏路径都没走到它：列表不渲染板，子页连宿主一起收起。与拆页前一致。
 - **键盘**：宽屏下每枚 `board-piece` 可 Tab 聚焦（`:focus-visible` 走全站 accent 焦点环），
   Enter / 空格 / 菜单键 / Shift+F10 拿起物件并展开浮层；浮层是 `role="toolbar"` +
   roving tabindex，方向键在 8 枚钮间走位、Enter/空格执行、Esc 放下并把焦点还给物件；
@@ -158,8 +169,9 @@ import Board from "@/components/Board.astro"
   经 `--stamp-mask` 下发）。矢量→任意尺寸都锐利、四角也是真齿孔；`.stamp` 固定
   `aspect-ratio: 160/208` 保证等比缩放不变形，内部图 `object-fit: cover` 填满。内容仍是任意图片。
   （早期用四条 `radial-gradient` 现算齿孔，因 `add` 合成会互相填满、且角对齐很脆，已弃用。）
-- **双语**：`/board` 与 `/en/board` 都有语言切换器；`src/components/LanguageSwitch.astro`
-  的双语路径白名单需包含 `/board`、`/board/`，否则板页不显示切换器。
+- **双语**：`/board/stamps` 与 `/en/board/stamps` 都有语言切换器；
+  `src/components/LanguageSwitch.astro` 的双语路径白名单按 `/board` 与 `/board/` 前缀
+  放行，所以列表页与任意子页自动有切换器——前提是中英孪生都在，否则切过去 404。
 - **视图标签**：板面上方的「文件夹分隔标签」（`board-tabs`）——顶部圆角、底边敞开贴合板面、
   标签互相叠压（负左边距 + 左高右低 z-index + 向右阴影），选中项抬到最前、实线描边、饱和底色，
   未选中为虚线描边 + 淡底。点切把 `stamp-board` 的 `data-view` 改为 `all/stamp/badge`，由 CSS 按
@@ -194,26 +206,34 @@ import Board from "@/components/Board.astro"
 
 ```astro
 ---
-import Layout from "@/layouts/Layout.astro"
-import MetaPage from "@/components/MetaPage.astro"
-import ListingHead from "@/components/ListingHead.astro"
+// src/components/exhibits/StampsExhibit.astro —— 页头、板、附注各归其位
 import Board from "@/components/Board.astro"
-import { getBoardViews } from "@/lib/content"
+import ListingHead from "@/components/ListingHead.astro"
+import { t, type Locale } from "@/lib/i18n"
 
-const items = await getBoardViews("zh")
+const { locale } = Astro.props
 ---
 
-<Layout>
-  <MetaPage slot="head" title="收藏板" alternates={{ zh: "/board", en: "/en/board" }} />
-  <ListingHead kicker={`~/board · ${items.length} 枚`} title="收藏板" desc="…" />
-  <Board locale="zh" />
-</Layout>
+<ListingHead
+  kicker="~/board/stamps"
+  title={t(locale, "stampsTitle")}
+  desc={t(locale, "stampsDesc")}
+/>
+<div data-wide-only>
+  <Board locale={locale} />
+</div>
+<p class="wide-notice">{t(locale, "boardWideOnly")}</p>
+{/* 参考链接与 SVG 署名（两种语言都渲染） */}
 ```
+
+外壳（`Layout` + crumbs + `MetaPage alternates`）不在这里，在
+`src/components/BoardExhibit.astro`；路由见 [board-index.md](./board-index.md)。
 
 ## 9. dev 布局编辑器（保存浮条）
 
-`astro dev` 下 `/board`（及 `/en/board`）板下出现「保存布局」浮条（`<board-editor>`，
-模式同 [MomentComposer](./README.md)：仅开发环境、生产 HTML 无 markup）。宽屏（≥ 64rem）
+`astro dev` 下 `/board/stamps`（及 `/en/board/stamps`）板下出现「保存布局」浮条
+（`<board-editor>`，模式同 [MomentComposer](./README.md)：仅开发环境、生产 HTML 无
+markup）。宽屏（≥ 64rem）
 里用右键/长按/键盘拿起物件，经缩放、旋转、镜像、拖拽、叠放调整到位后点「保存布局」，
 浮条遍历 `board-piece[data-id]` 采集当前 `--x/--y/--rot/--z/--s/--sx`，`POST /api/board/layout`：
 
@@ -227,5 +247,7 @@ const items = await getBoardViews("zh")
 - **零生产痕迹**：生产构建既无 `<board-editor>` markup、也无 `/api/board/layout` 路由
   （少量 scoped 死样式残留与 `MomentComposer` 同款，行为无影响）。
 - **回归**：`bash scripts/tests/board-source-patch-check.sh`（离线纯字符串，不碰真实文件）；
-  `bash scripts/tests/board-layout-check.sh`（校验 + 起停 dev server，写入 `/tmp` fixture 副本）；
-  `bash scripts/tests/board-check.sh`（生产 HTML 无编辑条 + piece 带 `data-id`/`--sx`）。
+  `bash scripts/tests/board-layout-check.sh`（校验 + 起停 dev server，写入 `/tmp` fixture 副本；
+  B5 抓 `/board/stamps` 页面的编辑条）；
+  `bash scripts/tests/board-check.sh`（`dist/board/stamps/index.html` 无编辑条 + piece 带
+  `data-id`/`--sx`）。
